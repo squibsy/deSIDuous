@@ -2,9 +2,9 @@
 #include "PluginEditor.h"
 #include "Presets.h"
 
-SIDSynthProcessor::SIDSynthProcessor()
+InsidiousProcessor::InsidiousProcessor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      state (*this, nullptr, "SIDSynth", Params::createLayout())
+      state (*this, nullptr, "inSIDious", Params::createLayout())
 {
     auto get = [this] (const juce::String& id) {
         auto* p = state.getRawParameterValue (id);
@@ -48,20 +48,20 @@ SIDSynthProcessor::SIDSynthProcessor()
     setCurrentProgram (1);
 }
 
-SIDSynthProcessor::~SIDSynthProcessor()
+InsidiousProcessor::~InsidiousProcessor()
 {
     cancelPendingUpdate();
     state.removeParameterListener (Params::clock, this);
     state.removeParameterListener (Params::quality, this);
 }
 
-bool SIDSynthProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool InsidiousProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     const auto& out = layouts.getMainOutputChannelSet();
     return out == juce::AudioChannelSet::mono() || out == juce::AudioChannelSet::stereo();
 }
 
-EngineSettings SIDSynthProcessor::snapshot() const
+EngineSettings InsidiousProcessor::snapshot() const
 {
     auto b = [] (const std::atomic<float>* p) { return p->load() > 0.5f; };
     auto i = [] (const std::atomic<float>* p) { return juce::roundToInt (p->load()); };
@@ -93,7 +93,7 @@ EngineSettings SIDSynthProcessor::snapshot() const
     return s;
 }
 
-void SIDSynthProcessor::prepareToPlay (double sampleRate, int)
+void InsidiousProcessor::prepareToPlay (double sampleRate, int)
 {
     if (sampleRate != currentSampleRate || engine.needsRebuild (snapshot()))
     {
@@ -103,19 +103,19 @@ void SIDSynthProcessor::prepareToPlay (double sampleRate, int)
     keyboardState.reset();
 }
 
-void SIDSynthProcessor::parameterChanged (const juce::String&, float)
+void InsidiousProcessor::parameterChanged (const juce::String&, float)
 {
     triggerAsyncUpdate();   // rebuild chips on the message thread (resampler tables are expensive)
 }
 
-void SIDSynthProcessor::handleAsyncUpdate()
+void InsidiousProcessor::handleAsyncUpdate()
 {
     const auto s = snapshot();
     if (currentSampleRate > 0.0 && engine.needsRebuild (s))
         engine.rebuildChips (currentSampleRate, s);
 }
 
-void SIDSynthProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
+void InsidiousProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
     keyboardState.processNextMidiBuffer (midi, 0, buffer.getNumSamples(), true);
@@ -123,12 +123,12 @@ void SIDSynthProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 }
 
 //==============================================================================
-int SIDSynthProcessor::getNumPrograms()
+int InsidiousProcessor::getNumPrograms()
 {
     return (int) getFactoryPresets().size();
 }
 
-void SIDSynthProcessor::setCurrentProgram (int index)
+void InsidiousProcessor::setCurrentProgram (int index)
 {
     const auto& presets = getFactoryPresets();
     if (! juce::isPositiveAndBelow (index, (int) presets.size()))
@@ -138,13 +138,13 @@ void SIDSynthProcessor::setCurrentProgram (int index)
     applyPreset (state, presets[(size_t) index]);
 }
 
-const juce::String SIDSynthProcessor::getProgramName (int index)
+const juce::String InsidiousProcessor::getProgramName (int index)
 {
     const auto& presets = getFactoryPresets();
     return juce::isPositiveAndBelow (index, (int) presets.size()) ? presets[(size_t) index].displayName() : juce::String();
 }
 
-void SIDSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
+void InsidiousProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto tree = state.copyState();
     tree.setProperty ("program", currentProgram, nullptr);
@@ -152,7 +152,7 @@ void SIDSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
         copyXmlToBinary (*xml, destData);
 }
 
-void SIDSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
+void InsidiousProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (state.state.getType()))
@@ -163,12 +163,12 @@ void SIDSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
         }
 }
 
-juce::AudioProcessorEditor* SIDSynthProcessor::createEditor()
+juce::AudioProcessorEditor* InsidiousProcessor::createEditor()
 {
-    return new SIDSynthEditor (*this);
+    return new InsidiousEditor (*this);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new SIDSynthProcessor();
+    return new InsidiousProcessor();
 }

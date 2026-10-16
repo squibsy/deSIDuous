@@ -1,4 +1,6 @@
-# SIDSynth
+<p align="center"><img src="Resources/logo.png" alt="inSIDious" width="480"></p>
+
+# inSIDious
 
 A VST3 instrument built on a cycle-exact emulation of the MOS 6581 and 8580 SID chips (Commodore 64), using **reSIDfp** from libsidplayfp and **JUCE 8**.
 
@@ -50,16 +52,16 @@ You need Visual Studio 2022 Build Tools (C++ workload) and CMake 3.22 or later. 
 git clone --recursive https://github.com/squibsy/inSIDious.git
 cd inSIDious
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target SIDSynth_VST3
+cmake --build build --config Release --target inSIDious_VST3
 ```
 
-The output is `build/SIDSynth_artefacts/Release/VST3/SIDSynth.vst3`. To install it, copy that folder into `C:\Program Files\Common Files\VST3`.
+The output is `build/inSIDious_artefacts/Release/VST3/inSIDious.vst3`. To install it, copy that folder into `C:\Program Files\Common Files\VST3`.
 
 ### Tests
 
 ```bash
 cmake --build build --config Release --target RenderTest NoiseTest
-build/RenderTest_artefacts/Release/RenderTest.exe build/SIDSynth_artefacts/Release/VST3/SIDSynth.vst3 renders
+build/RenderTest_artefacts/Release/RenderTest.exe build/inSIDious_artefacts/Release/VST3/inSIDious.vst3 renders
 ```
 
 `RenderTest` loads the built VST3 the way a DAW would. It renders every preset to `renders/*.wav`, prints peak level, short-term RMS, brightness, tail length and CPU per preset, and checks the voice modes and the state save/restore. Pass `--ui <program>` to open the editor in a window instead. `NoiseTest` drives reSIDfp directly, as a reference.

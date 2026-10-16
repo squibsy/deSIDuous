@@ -1,4 +1,4 @@
-// Offline test host: loads the built SIDSynth.vst3, renders every factory preset
+// Offline test host: loads the built inSIDious.vst3, renders every factory preset
 // to a WAV file and prints level / brightness / CPU statistics.
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -98,7 +98,7 @@ int main (int argc, char** argv)
 
     if (argc < 3)
     {
-        std::cout << "usage: RenderTest <path to SIDSynth.vst3> <output dir>\n";
+        std::cout << "usage: RenderTest <path to inSIDious.vst3> <output dir>\n";
         return 1;
     }
 
@@ -124,7 +124,7 @@ int main (int argc, char** argv)
         plugin->setCurrentProgram (argc > 4 ? juce::String (argv[4]).getIntValue() : 20);
         juce::MessageManager::getInstance()->runDispatchLoopUntil (200);
 
-        juce::DocumentWindow window ("SIDSynth UI test", juce::Colours::black, 0);
+        juce::DocumentWindow window ("inSIDious UI test", juce::Colours::black, 0);
         window.setUsingNativeTitleBar (true);
         window.setContentOwned (plugin->createEditorAndMakeActive(), true);
         window.setTopLeftPosition (20, 20);

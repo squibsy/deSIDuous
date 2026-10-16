@@ -132,11 +132,11 @@ private:
 }
 
 //==============================================================================
-class SIDSynthEditor : public juce::AudioProcessorEditor, private juce::Timer
+class InsidiousEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
-    explicit SIDSynthEditor (SIDSynthProcessor&);
-    ~SIDSynthEditor() override;
+    explicit InsidiousEditor (InsidiousProcessor&);
+    ~InsidiousEditor() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -145,8 +145,12 @@ private:
     void timerCallback() override;
     void choosePreset (int index);
 
-    SIDSynthProcessor& processor;
+    InsidiousProcessor& processor;
+    static constexpr int headerHeight = 84;
+    static constexpr int logoWidth = 186;   // logo is 2.74:1, drawn ~68 px tall
+
     SidLookAndFeel lnf;
+    juce::Image logo;
     juce::TooltipWindow tooltips { this, 600 };
 
     juce::ComboBox presetBox;
@@ -162,5 +166,5 @@ private:
     ui::RegisterView registers;
     juce::MidiKeyboardComponent keyboard;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SIDSynthEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (InsidiousEditor)
 };

@@ -1,5 +1,6 @@
 #include "PluginEditor.h"
 #include "Presets.h"
+#include "BinaryData.h"
 
 namespace ui
 {
@@ -371,7 +372,7 @@ void RegisterView::paint (juce::Graphics& g)
 }
 
 //==============================================================================
-SIDSynthEditor::SIDSynthEditor (SIDSynthProcessor& p)
+InsidiousEditor::InsidiousEditor (InsidiousProcessor& p)
     : AudioProcessorEditor (&p), processor (p),
       chip (p.state, Params::chipModel, "CHIP", "MOS 6581: warm, distorted, non-linear filter. MOS 8580: cleaner, linear filter, stronger combined waveforms."),
       mode (p.state, Params::voiceMode, "VOICE MODE", "Layered Poly: each note plays all 3 voices on its own chip. Paraphonic: one chip, one note per voice. MIDI Ch 1-3: channel N drives voice N."),
@@ -429,16 +430,18 @@ SIDSynthEditor::SIDSynthEditor (SIDSynthProcessor& p)
     keyboard.setLowestVisibleKey (36);
     addAndMakeVisible (keyboard);
 
-    setSize (1184, 770);
+    logo = juce::ImageCache::getFromMemory (BinaryData::logo_png, BinaryData::logo_pngSize);
+
+    setSize (1184, 770 - 54 + headerHeight);
     startTimerHz (10);
 }
 
-SIDSynthEditor::~SIDSynthEditor()
+InsidiousEditor::~InsidiousEditor()
 {
     setLookAndFeel (nullptr);
 }
 
-void SIDSynthEditor::choosePreset (int index)
+void InsidiousEditor::choosePreset (int index)
 {
     if (index < 0 || index >= processor.getNumPrograms())
         return;
@@ -447,44 +450,55 @@ void SIDSynthEditor::choosePreset (int index)
     presetBox.setSelectedId (index + 1, juce::dontSendNotification);
 }
 
-void SIDSynthEditor::timerCallback()
+void InsidiousEditor::timerCallback()
 {
     const int id = processor.getCurrentProgram() + 1;
     if (presetBox.getSelectedId() != id)
         presetBox.setSelectedId (id, juce::dontSendNotification);
 }
 
-void SIDSynthEditor::paint (juce::Graphics& g)
+void InsidiousEditor::paint (juce::Graphics& g)
 {
     g.fillAll (C64::background);
 
-    auto header = getLocalBounds().removeFromTop (54).reduced (12, 0);
-    g.setColour (C64::text);
-    g.setFont (SidLookAndFeel::monoFont (22.0f));
-    g.drawText ("SIDSYNTH", header.removeFromLeft (130), juce::Justification::centredLeft);
-    g.setColour (C64::textDim);
-    g.setFont (SidLookAndFeel::monoFont (11.0f, false));
-    g.drawText ("6581/8580  RESIDFP", header.removeFromLeft (140), juce::Justification::centredLeft);
+    // header bar in the logo's own night-black, with the logo on the left
+    auto headerArea = getLocalBounds().removeFromTop (headerHeight);
+    g.setColour (Logo::night);
+    g.fillRect (headerArea);
 
-    // rainbow stripe, a nod to the C64 boot palette
-    const juce::Colour stripes[] = { C64::lightRed, C64::yellow, C64::lightGreen, C64::cyan, C64::lightBlue };
-    auto stripe = getLocalBounds().removeFromTop (54).removeFromBottom (3).reduced (8, 0);
-    const int sw = stripe.getWidth() / 5;
-    for (int i = 0; i < 5; ++i)
+    auto header = headerArea.reduced (12, 0);
+    auto logoArea = header.removeFromLeft (logoWidth).reduced (0, 8);
+    if (logo.isValid())
     {
-        g.setColour (stripes[i]);
-        g.fillRect (stripe.removeFromLeft (i == 4 ? stripe.getWidth() : sw));
+        g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+        g.drawImageWithin (logo, logoArea.getX(), logoArea.getY(), logoArea.getWidth(), logoArea.getHeight(),
+                           juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
     }
+
+    auto caption = header.removeFromLeft (110).withSizeKeepingCentre (110, 30).withTrimmedLeft (8);
+    g.setFont (SidLookAndFeel::monoFont (11.0f, false));
+    g.setColour (Logo::cyan);
+    g.drawText ("MOS 6581/8580", caption.removeFromTop (15), juce::Justification::centredLeft);
+    g.setColour (Logo::pink);
+    g.drawText ("SID SYNTH", caption, juce::Justification::centredLeft);
+
+    // pink / cyan split line under the header, echoing the logo's offset print
+    auto line = headerArea.removeFromBottom (4);
+    g.setColour (Logo::cyan);
+    g.fillRect (line.removeFromTop (2));
+    g.setColour (Logo::pink);
+    g.fillRect (line.translated (6, 0));
 }
 
-void SIDSynthEditor::resized()
+void InsidiousEditor::resized()
 {
     const int gap = 8;
     auto area = getLocalBounds().reduced (gap, 0);
 
-    auto header = area.removeFromTop (54).reduced (0, 6).withTrimmedBottom (2);
-    header.removeFromLeft (280);
-    auto presetArea = header.removeFromLeft (360);
+    auto header = area.removeFromTop (headerHeight).withTrimmedBottom (4);
+    header = header.withSizeKeepingCentre (header.getWidth(), 40);
+    header.removeFromLeft (logoWidth + 110 + 12);
+    auto presetArea = header.removeFromLeft (330);
     prevButton.setBounds (presetArea.removeFromLeft (28).withTrimmedTop (14).withHeight (22));
     nextButton.setBounds (presetArea.removeFromRight (28).withTrimmedTop (14).withHeight (22));
     presetBox.setBounds (presetArea.reduced (4, 0).withTrimmedTop (14).withHeight (22));

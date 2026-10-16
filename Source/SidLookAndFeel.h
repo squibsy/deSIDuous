@@ -28,6 +28,15 @@ namespace C64
     const juce::Colour accent     { 0xffd8e08a };
 }
 
+// inSIDious logo colours (sampled from the artwork)
+namespace Logo
+{
+    const juce::Colour night { 0xff020713 };
+    const juce::Colour pink  { 0xffff1f8e };
+    const juce::Colour cyan  { 0xff1ec8f2 };
+    const juce::Colour cream { 0xfffff2dc };
+}
+
 class SidLookAndFeel : public juce::LookAndFeel_V4
 {
 public:

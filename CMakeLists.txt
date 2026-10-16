@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(SIDSynth VERSION 1.0.0 LANGUAGES C CXX)
+project(inSIDious VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,12 +52,12 @@ endif()
 # ---------------------------------------------------------------------------
 # The plugin
 # ---------------------------------------------------------------------------
-juce_add_plugin(SIDSynth
+juce_add_plugin(inSIDious
     COMPANY_NAME "Bananalytics"
-    BUNDLE_ID "ie.bananalytics.sidsynth"
+    BUNDLE_ID "ie.bananalytics.insidious"
     PLUGIN_MANUFACTURER_CODE Bnly
     PLUGIN_CODE Sid8
-    PRODUCT_NAME "SIDSynth"
+    PRODUCT_NAME "inSIDious"
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
@@ -67,7 +67,7 @@ juce_add_plugin(SIDSynth
     VST3_CATEGORIES Instrument Synth
     FORMATS VST3)
 
-target_sources(SIDSynth PRIVATE
+target_sources(inSIDious PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
     Source/Params.cpp
@@ -75,15 +75,18 @@ target_sources(SIDSynth PRIVATE
     Source/Presets.cpp
     Source/SidLookAndFeel.cpp)
 
-target_compile_definitions(SIDSynth PUBLIC
+juce_add_binary_data(inSIDiousData SOURCES Resources/logo.png)
+
+target_compile_definitions(inSIDious PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0)
 
-target_link_libraries(SIDSynth
+target_link_libraries(inSIDious
     PRIVATE
         residfp
+        inSIDiousData
         juce::juce_audio_utils
     PUBLIC
         juce::juce_recommended_config_flags
@@ -93,8 +96,8 @@ target_link_libraries(SIDSynth
 # ---------------------------------------------------------------------------
 # Offline test host (optional): renders every preset from the built VST3
 # ---------------------------------------------------------------------------
-option(SIDSYNTH_BUILD_TESTS "Build the RenderTest host" ON)
-if(SIDSYNTH_BUILD_TESTS)
+option(INSIDIOUS_BUILD_TESTS "Build the RenderTest host" ON)
+if(INSIDIOUS_BUILD_TESTS)
     juce_add_console_app(RenderTest PRODUCT_NAME "RenderTest")
     target_sources(RenderTest PRIVATE tools/RenderTest/Main.cpp)
     target_compile_definitions(RenderTest PRIVATE
@@ -108,7 +111,7 @@ if(SIDSYNTH_BUILD_TESTS)
         juce::juce_recommended_config_flags)
 endif()
 
-if(SIDSYNTH_BUILD_TESTS)
+if(INSIDIOUS_BUILD_TESTS)
     add_executable(NoiseTest tools/NoiseTest/main.cpp)
     target_link_libraries(NoiseTest PRIVATE residfp)
 endif()
