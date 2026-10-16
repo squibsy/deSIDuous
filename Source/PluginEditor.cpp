@@ -480,7 +480,7 @@ void InsidiousEditor::paint (juce::Graphics& g)
     g.setColour (Logo::cyan);
     g.drawText ("MOS 6581/8580", caption.removeFromTop (15), juce::Justification::centredLeft);
     g.setColour (Logo::pink);
-    g.drawText ("SID SYNTH", caption, juce::Justification::centredLeft);
+    g.drawText ("SID SYNTH  v" JucePlugin_VersionString, caption, juce::Justification::centredLeft);
 
     // pink / cyan split line under the header, echoing the logo's offset print
     auto line = headerArea.removeFromBottom (4);
