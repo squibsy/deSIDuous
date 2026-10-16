@@ -47,7 +47,7 @@ Cycle-exact emulation runs each chip at about 1 MHz. On the development machine,
 You need Visual Studio 2022 Build Tools (C++ workload) and CMake 3.22 or later. JUCE and libsidplayfp are git submodules in `libs/`, pinned to JUCE 8.0.15 and libsidplayfp 2.16.1. Clone with `--recursive`, or run `git submodule update --init` after a normal clone.
 
 ```bash
-git clone --recursive https://github.com/<you>/inSIDious.git
+git clone --recursive https://github.com/squibsy/inSIDious.git
 cd inSIDious
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release --target SIDSynth_VST3
