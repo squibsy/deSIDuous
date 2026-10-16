@@ -1,0 +1,80 @@
+# SIDSynth
+
+A VST3 instrument built on a cycle-exact emulation of the MOS 6581 and 8580 SID chips (Commodore 64), using **reSIDfp** from libsidplayfp and **JUCE 8**.
+
+The plugin writes real SID registers ($D400 to $D418) at a 1 kHz control rate. Everything you hear (oscillators, combined waveforms, ring mod, hard sync, the ADSR envelopes including their quirks, and the 6581/8580 filters) comes from the emulated chip itself.
+
+## Features
+
+**Per voice (x3)**
+- Triangle, Saw, Pulse and Noise toggles. Any combination is allowed, so all 15 waveform combinations are available.
+- Ring mod and hard sync, with the hardware routing: V1 is modulated by V3, V2 by V1, V3 by V2. A voice that is switched off keeps its oscillator running, so it can still act as a silent sync or ring source.
+- Test bit, filter routing, key tracking (off gives a fixed pitch for drums), and per-voice arpeggio enable.
+- 12-bit pulse width with a PWM sweep (rate and depth).
+- 4-bit ADSR. The values are the data sheet register values, with rates from 2 ms to 8 s (attack) and 6 ms to 24 s (decay and release).
+- "Hit wave" (a different waveform for the first few ms) and a pitch sweep, the classic SID tricks for drums and plucks.
+
+**Filter (data sheet registers)**
+- 11-bit cutoff, 4-bit resonance, LP / BP / HP (combinable), and 3OFF.
+- A software envelope, key tracking, velocity and LFO all modulate the cutoff register.
+- Filter Bias sets the reSIDfp filter curve. Real chips vary a lot from one to the next.
+
+**Chip and global**
+- 6581 or 8580 model, PAL or NTSC clock, and combined-waveform strength (Average, Weak, Strong).
+- Voice modes:
+  - **Layered Poly**: every note gets its own SID chip with all 3 voices, up to 8 chips.
+  - **Paraphonic**: one chip, one note per voice, 3 notes maximum.
+  - **MIDI Ch 1-3**: MIDI channel N drives voice N.
+- Glide and legato, pitch bend range, mod wheel to vibrato, sustain pedal.
+- Hard restart (works around the SID ADSR delay bug) and an oscillator reset (test-bit pulse) on each note.
+- LFO (triangle, sine, square, saw or random) to vibrato with delay, cutoff and pulse width.
+- Arpeggio: chord shapes, or cycling through held notes. The step length is set in video frames (50 Hz or 60 Hz), like a C64 tracker.
+
+**UI**: C64-style panels, an oscilloscope, a live register monitor and an on-screen keyboard.
+
+## Presets
+
+There are 64 factory presets, available through the preset menu or your DAW's program list. Categories: Bass, Lead, Pad, Arp, Keys, Drums, FX, and a Waveform showcase.
+
+All presets were rendered and level-matched with `RenderTest`. Short-term RMS is about -18 dBFS for single-note patches and -16 dBFS for chords, with peaks below -3 dBFS.
+
+## CPU
+
+Cycle-exact emulation runs each chip at about 1 MHz. On the development machine, one chip costs about 8 to 10% of a CPU core at 48 kHz. Only chips that are sounding are clocked; idle chips cost nothing. Polyphony defaults to 4. Pads use 6, which is about 55% of a core with all 6 notes held.
+
+## Building (Windows)
+
+You need Visual Studio 2022 Build Tools (C++ workload) and CMake 3.22 or later. JUCE and libsidplayfp are git submodules in `libs/`, pinned to JUCE 8.0.15 and libsidplayfp 2.16.1. Clone with `--recursive`, or run `git submodule update --init` after a normal clone.
+
+```bash
+git clone --recursive https://github.com/<you>/inSIDious.git
+cd inSIDious
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release --target SIDSynth_VST3
+```
+
+The output is `build/SIDSynth_artefacts/Release/VST3/SIDSynth.vst3`. To install it, copy that folder into `C:\Program Files\Common Files\VST3`.
+
+### Tests
+
+```bash
+cmake --build build --config Release --target RenderTest NoiseTest
+build/RenderTest_artefacts/Release/RenderTest.exe build/SIDSynth_artefacts/Release/VST3/SIDSynth.vst3 renders
+```
+
+`RenderTest` loads the built VST3 the way a DAW would. It renders every preset to `renders/*.wav`, prints peak level, short-term RMS, brightness, tail length and CPU per preset, and checks the voice modes and the state save/restore. Pass `--ui <program>` to open the editor in a window instead. `NoiseTest` drives reSIDfp directly, as a reference.
+
+## Source layout
+
+| File | Purpose |
+|---|---|
+| `Source/SidEngine.*` | SID chip wrapper (reSIDfp, register shadow, demand-driven output FIFO) and the engine: voice allocation, gate sequencing, modulation, register writes |
+| `Source/Params.*` | Parameter layout and data sheet tables |
+| `Source/Presets.*` | Factory presets (builder style) |
+| `Source/PluginProcessor.*` | JUCE processor, programs, state |
+| `Source/PluginEditor.*`, `Source/SidLookAndFeel.*` | UI |
+| `config/` | Generated `siddefs-fp.h` and `sidcxx11.h` for building reSIDfp without autotools |
+
+## Licence
+
+reSIDfp is GPL v2 or later, and JUCE 8 is used under its AGPLv3 open-source licence. This plugin is therefore distributed under the **AGPLv3**. Releasing it closed-source would need a commercial JUCE licence and a replacement for reSIDfp.
