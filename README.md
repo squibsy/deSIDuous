@@ -6,6 +6,26 @@ A VST3 instrument built on a cycle-exact emulation of the MOS 6581 and 8580 SID 
 
 The plugin writes real SID registers ($D400 to $D418) at a 1 kHz control rate. Everything you hear (oscillators, combined waveforms, ring mod, hard sync, the ADSR envelopes including their quirks, and the 6581/8580 filters) comes from the emulated chip itself.
 
+## Download
+
+Get the latest version from the **[Releases page](https://github.com/squibsy/inSIDious/releases/latest)**. Each zip contains only the `inSIDious.vst3` plugin; you don't need the source code to use it.
+
+| Platform | File | Copy `inSIDious.vst3` to |
+|---|---|---|
+| Windows 10/11 (64-bit) | `inSIDious-<version>-windows-x64-vst3.zip` | `C:\Program Files\Common Files\VST3` |
+| macOS 10.13+ (Apple Silicon and Intel) | `inSIDious-<version>-macos-universal-vst3.zip` | `/Library/Audio/Plug-Ins/VST3` or `~/Library/Audio/Plug-Ins/VST3` |
+| Linux (64-bit) | `inSIDious-<version>-linux-x64-vst3.zip` | `~/.vst3` |
+
+Then rescan plugins in your DAW. inSIDious appears as an instrument from "Bananalytics".
+
+**macOS:** the plugin isn't notarised by Apple, so macOS may block it the first time. After copying it, run this once in Terminal (adjust the path if you used `~/Library`):
+
+```bash
+xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/inSIDious.vst3
+```
+
+**Linux:** built on Ubuntu 22.04. It should work on any distribution from about 2022 onwards.
+
 ## Features
 
 **Per voice (x3)**

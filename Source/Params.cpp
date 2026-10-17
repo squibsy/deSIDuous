@@ -51,7 +51,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         group->addChild (std::make_unique<APB> (pid (vid (v, pulse)), n + "Pulse",    v != 0));
         group->addChild (std::make_unique<APB> (pid (vid (v, noise)), n + "Noise",    false));
         group->addChild (std::make_unique<APB> (pid (vid (v, ring)),  n + "Ring Mod", false));
-        group->addChild (std::make_unique<APB> (pid (vid (v, sync)),  n + "Hard Sync", false));
+        group->addChild (std::make_unique<APB> (pid (vid (v, oscSync)),  n + "Hard Sync", false));
         group->addChild (std::make_unique<APB> (pid (vid (v, test)),  n + "Test Bit", false));
         group->addChild (std::make_unique<APB> (pid (vid (v, filt)),  n + "Filter Route", false));
 

@@ -47,7 +47,7 @@ jobs:
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DINSIDIOUS_BUILD_TESTS=OFF
+        run: cmake -S . -B build -A x64 -DINSIDIOUS_BUILD_TESTS=OFF
 
       - name: Configure (macOS)
         if: runner.os == 'macOS'

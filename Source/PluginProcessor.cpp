@@ -18,7 +18,7 @@ InsidiousProcessor::InsidiousProcessor()
         auto& x = vp[v];
         x.on = get (vid (v, on));       x.tri = get (vid (v, tri));     x.saw = get (vid (v, saw));
         x.pulse = get (vid (v, pulse)); x.noise = get (vid (v, noise)); x.ring = get (vid (v, ring));
-        x.sync = get (vid (v, sync));   x.test = get (vid (v, test));   x.filt = get (vid (v, filt));
+        x.sync = get (vid (v, oscSync));   x.test = get (vid (v, test));   x.filt = get (vid (v, filt));
         x.keyTrack = get (vid (v, keyTrack)); x.arp = get (vid (v, arp));
         x.coarse = get (vid (v, coarse)); x.fine = get (vid (v, fine)); x.pw = get (vid (v, pw));
         x.pwmRate = get (vid (v, pwmRate)); x.pwmDepth = get (vid (v, pwmDepth));

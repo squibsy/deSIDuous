@@ -51,7 +51,7 @@ namespace
         }
         B& tune (int v, int semis, float cents = 0.0f) { return vset (v, coarse, (float) semis).vset (v, fine, cents); }
         B& ringMod (int v)          { return vset (v, ring, 1.0f); }
-        B& hardSync (int v)         { return vset (v, sync, 1.0f); }
+        B& hardSync (int v)         { return vset (v, oscSync, 1.0f); }
         B& filt (int v)             { return vset (v, Params::filt, 1.0f); }
         B& hit (int v, int nibble, float ms) { return vset (v, hitWave, (float) nibble).vset (v, hitTime, ms); }
         B& sweepFrom (int v, float st, float ms) { return vset (v, sweep, st).vset (v, sweepTime, ms); }

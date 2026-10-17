@@ -147,7 +147,7 @@ VoicePanel::VoicePanel (APVTS& st, int v)
       pulse    (st, Params::vid (v, Params::pulse), "PUL",  "Pulse waveform (control bit 6). Width set by PW."),
       noise    (st, Params::vid (v, Params::noise), "NOI",  "Noise waveform (control bit 7). Combining noise with other waves can lock the LFSR, as on real chips."),
       ring     (st, Params::vid (v, Params::ring),  "RING", "Ring modulation (bit 2): replaces this voice's triangle with ring-modulated output. Needs TRI. Source: voice " + juce::String ((v + 2) % 3 + 1)),
-      sync     (st, Params::vid (v, Params::sync),  "SYNC", "Hard sync (bit 1): resets this oscillator on the source oscillator's cycle. Source: voice " + juce::String ((v + 2) % 3 + 1)),
+      sync     (st, Params::vid (v, Params::oscSync),  "SYNC", "Hard sync (bit 1): resets this oscillator on the source oscillator's cycle. Source: voice " + juce::String ((v + 2) % 3 + 1)),
       test     (st, Params::vid (v, Params::test),  "TEST", "Test bit (bit 3): holds the oscillator at zero and resets noise."),
       filt     (st, Params::vid (v, Params::filt),  "FILT", "Route this voice through the SID filter ($D417)"),
       keyTrack (st, Params::vid (v, Params::keyTrack), "KEY", "Key tracking. Off = fixed pitch (C-4 + coarse), useful for drums."),

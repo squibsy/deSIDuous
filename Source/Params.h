@@ -15,7 +15,7 @@ namespace Params
     constexpr const char* pulse     = "pulse";
     constexpr const char* noise     = "noise";
     constexpr const char* ring      = "ring";
-    constexpr const char* sync      = "sync";
+    constexpr const char* oscSync   = "sync";
     constexpr const char* test      = "test";
     constexpr const char* filt      = "filt";
     constexpr const char* coarse    = "coarse";
