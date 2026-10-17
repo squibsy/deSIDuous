@@ -128,6 +128,7 @@ int main (int argc, char** argv)
         window.setUsingNativeTitleBar (true);
         window.setContentOwned (plugin->createEditorAndMakeActive(), true);
         window.setTopLeftPosition (20, 20);
+        window.setAlwaysOnTop (true);   // screenshots must capture this window, not whatever is in front
         window.setVisible (true);
         window.toFront (true);
 
@@ -139,7 +140,7 @@ int main (int argc, char** argv)
             {
                 juce::AudioBuffer<float> b (2, 480);
                 juce::MidiBuffer m;
-                if (count == 0)
+                if (count == 10)   // after the preset's parameters reach the processor
                     for (int n : { 48, 55, 60, 64 }) m.addEvent (juce::MidiMessage::noteOn (1, n, (juce::uint8) 100), 0);
                 ++count;
                 p.processBlock (b, m);

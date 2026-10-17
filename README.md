@@ -18,6 +18,8 @@ Get the latest version from the **[Releases page](https://github.com/squibsy/inS
 
 Then rescan plugins in your DAW. inSIDious appears as an instrument from "Bananalytics".
 
+📖 **[Read the user manual](docs/MANUAL.md)** for a guide to every control, sound design recipes and the preset list.
+
 **macOS:** the plugin isn't notarised by Apple, so macOS may block it the first time. After copying it, run this once in Terminal (adjust the path if you used `~/Library`):
 
 ```bash
@@ -84,7 +86,7 @@ cmake --build build --config Release --target RenderTest NoiseTest
 build/RenderTest_artefacts/Release/RenderTest.exe build/inSIDious_artefacts/Release/VST3/inSIDious.vst3 renders
 ```
 
-`RenderTest` loads the built VST3 the way a DAW would. It renders every preset to `renders/*.wav`, prints peak level, short-term RMS, brightness, tail length and CPU per preset, and checks the voice modes and the state save/restore. Pass `--ui <program>` to open the editor in a window instead. `NoiseTest` drives reSIDfp directly, as a reference.
+`RenderTest` loads the built VST3 the way a DAW would. It renders every preset to `renders/*.wav`, prints peak level, short-term RMS, brightness, tail length and CPU per preset, and checks the voice modes and the state save/restore. Pass `--ui <program>` to open the editor in a window instead. `NoiseTest` drives reSIDfp directly, as a reference. `tools/screenshots.ps1` regenerates the manual's screenshots from the built plugin (Windows).
 
 ## Source layout
 

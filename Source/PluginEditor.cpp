@@ -262,7 +262,7 @@ GlobalPanel::GlobalPanel (APVTS& st)
       outGain (st, Params::outGain, "OUTPUT"),
       bias (st, Params::filterBias, "FLT BIAS", "Filter curve: real chips vary a lot. 0.5 = typical"),
       hardRestart (st, Params::hardRestart, "HARD RST", "Hard restart: clears ADSR and gate before each note to avoid the SID envelope delay bug"),
-      phaseReset (st, Params::phaseReset, "OSC RESET", "Pulse the test bit before each note so the oscillator (and noise) start from a known state"),
+      phaseReset (st, Params::phaseReset, "OSC RESET", "Pulse the test bit before each note so the oscillator starts from a known phase"),
       combined (st, Params::combined, "COMBINED WAVES", "Strength of combined waveforms (chips differ)"),
       quality (st, Params::quality, "RESAMPLING")
 {
