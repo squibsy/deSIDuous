@@ -84,6 +84,7 @@ public:
 
     void reset();
     void write (int reg, uint8_t value);
+    void preroll (int samples);   // clock silently, discarding output
     uint8_t reg (int r) const { return regs[(size_t) r]; }
 
     // Adds n samples of this chip's output to dest.
@@ -119,6 +120,9 @@ public:
     void process (juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& midi, const EngineSettings& s);
     void allNotesOff();
 
+    // Clears every chip to silence on the next block (preset change, host reset).
+    void requestChipReset() { chipResetRequested = true; }
+
     // ---- UI taps (read from the message thread) ----
     std::array<std::atomic<uint8_t>, numRegs> monitorRegs {};
     std::atomic<int> monitorChip { 0 };
@@ -144,6 +148,7 @@ private:
         bool hasPlayed = false;
         uint64_t order = 0;
         int stack[16] {}; int stackSize = 0;   // MIDI-channel mode note stack
+        bool resetOsc = false;                  // pulse the test bit before this note
     };
 
     struct FilterEnv
@@ -167,6 +172,10 @@ private:
         double idleTime = 0.0;
         int arpStep = 0;
         double arpTimer = 0.0;
+        float gainNow = 1.0f, gainTarget = 1.0f;   // velocity, applied digitally
+        float dcIn = 0.0f, dcOut = 0.0f;           // per-chip DC blocker
+        bool freshStart = false;
+        float recentPeak = 0.0f;                   // output peak since the last tick
     };
 
     std::array<ChipRT, maxChips> chips;
@@ -184,7 +193,8 @@ private:
     bool sustainPedal = false;
     std::array<bool, 128> keyHeld {}, sustained {};
     std::vector<int> monoStack;   // layered mono / held-note arp
-    float dcIn = 0.0f, dcOut = 0.0f, dcCoeff = 0.9987f;
+    float dcCoeff = 0.9987f, gainSmoothing = 0.007f;
+    std::vector<float> scratch;
 
     void handleMidi (const juce::MidiMessage& m, const EngineSettings& s);
     void noteOn (int channel, int note, float vel, const EngineSettings& s);
@@ -195,10 +205,15 @@ private:
     void triggerVoice (ChipRT& c, int vi, int note, float vel, bool retrigger, const EngineSettings& s);
     void releaseVoice (VoiceRT& v);
     void releaseChip (ChipRT& c);
+    void wakeChip (ChipRT& c, float vel, const EngineSettings& s);
+    void writeFilterRegs (ChipRT& c, const EngineSettings& s);
+    static float noteGain (float vel, const EngineSettings& s);
 
     void tick (double dt, const EngineSettings& s);
     void updateChip (ChipRT& c, double dt, const EngineSettings& s, bool advance);
     int chipsInUse (const EngineSettings& s) const;
     void resetAllVoices();
+    void resetChips();
+    std::atomic<bool> chipResetRequested { false };
     void publishMonitor();
 };

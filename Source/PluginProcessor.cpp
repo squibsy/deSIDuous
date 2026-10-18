@@ -136,6 +136,7 @@ void DesiduousProcessor::setCurrentProgram (int index)
 
     currentProgram = index;
     applyPreset (state, presets[(size_t) index]);
+    engine.requestChipReset();   // no sound from the previous preset carries over
 }
 
 const juce::String DesiduousProcessor::getProgramName (int index)

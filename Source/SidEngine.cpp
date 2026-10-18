@@ -72,6 +72,14 @@ void SidChip::setModel (int chipModel, int combined, float filterBias)
     }
 }
 
+void SidChip::preroll (int samples)
+{
+    // Run the chip silently: lets register changes settle before its output is heard.
+    sid->clock ((unsigned int) (samples * cyclesPerSample), tmp.data());
+    fifoRead = 0;
+    fifoCount = 0;
+}
+
 void SidChip::reset()
 {
     sid->reset();
@@ -176,7 +184,8 @@ void SidEngine::rebuildChips (double newSampleRate, const EngineSettings& s)
         sampleRate = newSampleRate;
         tickSamples = std::max (1, juce::roundToInt (sampleRate / 1000.0));
         dcCoeff = (float) std::exp (-juce::MathConstants<double>::twoPi * 10.0 / sampleRate);
-        dcIn = dcOut = 0.0f;
+        gainSmoothing = (float) (1.0 - std::exp (-1.0 / (0.003 * sampleRate)));
+        scratch.assign ((size_t) std::max (4096, tickSamples * 4), 0.0f);
         samplesToTick = 0;
         builtClock = s.clock;
         builtQuality = s.quality;
@@ -242,6 +251,9 @@ void SidEngine::process (juce::AudioBuffer<float>& buffer, const juce::MidiBuffe
         lastArpMode = s.arpMode;
     }
 
+    if (chipResetRequested.exchange (false))
+        resetChips();
+
     for (auto& c : chips)
         c.chip->setModel (s.chipModel, s.combined, s.filterBias);
 
@@ -274,11 +286,30 @@ void SidEngine::process (juce::AudioBuffer<float>& buffer, const juce::MidiBuffe
         int activeCount = 0;
         for (auto& c : chips)
         {
-            if (c.active)
+            if (! c.active)
+                continue;
+
+            float* x = scratch.data();
+            std::fill (x, x + len, 0.0f);
+            c.chip->render (x, len, 1.0f);
+
+            // Per-chip 10 Hz DC blocker. A woken chip starts from its settled output level,
+            // so the jump from silence to that level never reaches the mix.
+            if (c.freshStart)
             {
-                c.chip->render (outL + pos, len, gain);
-                ++activeCount;
+                c.dcIn = x[0];
+                c.dcOut = 0.0f;
+                c.freshStart = false;
             }
+            for (int i = 0; i < len; ++i)
+            {
+                c.dcOut = x[i] - c.dcIn + dcCoeff * c.dcOut;
+                c.dcIn = x[i];
+                c.gainNow += (c.gainTarget - c.gainNow) * gainSmoothing;   // velocity, ~3 ms ramp
+                c.recentPeak = std::max (c.recentPeak, std::abs (c.dcOut));
+                outL[pos + i] += c.dcOut * c.gainNow * gain;
+            }
+            ++activeCount;
         }
         activeChipCount.store (activeCount, std::memory_order_relaxed);
 
@@ -289,16 +320,6 @@ void SidEngine::process (juce::AudioBuffer<float>& buffer, const juce::MidiBuffe
     // remaining events at the very end of the block
     for (; midiIt != midi.cend(); ++midiIt)
         handleMidi ((*midiIt).getMessage(), s);
-
-    // 10 Hz DC blocker: SID outputs carry large DC steps (envelope x DAC offset,
-    // 6581 volume register) which the real C64 only removes very slowly.
-    for (int i = 0; i < numSamples; ++i)
-    {
-        const float x = outL[i];
-        dcOut = x - dcIn + dcCoeff * dcOut;
-        dcIn = x;
-        outL[i] = dcOut;
-    }
 
     for (int ch = 1; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom (ch, 0, buffer, 0, 0, numSamples);
@@ -450,8 +471,7 @@ void SidEngine::noteOn (int channel, int note, float vel, const EngineSettings& 
 
         c.velocity = vel;
         c.lastNote = note;
-        c.active = true;
-        c.idleTime = 0.0;
+        wakeChip (c, vel, s);
         c.fenv.trigger();
         c.arpStep = 0;
         c.arpTimer = 0.0;
@@ -477,8 +497,7 @@ void SidEngine::noteOn (int channel, int note, float vel, const EngineSettings& 
 
         c.velocity = vel;
         c.lastNote = note;
-        c.active = true;
-        c.idleTime = 0.0;
+        wakeChip (c, vel, s);
         if (! (wasHeld && s.legato))
         {
             c.fenv.trigger();
@@ -574,14 +593,65 @@ void SidEngine::releaseNote (int channel, int note, const EngineSettings& s)
 }
 
 //==============================================================================
+void SidEngine::writeFilterRegs (ChipRT& c, const EngineSettings& s)
+{
+    auto& chip = *c.chip;
+    const double keyScale = std::pow (2.0, s.fKeyTrack * (c.lastNote - 60) / 12.0);
+    const double cut = s.cutoff * keyScale
+                     + s.fEnvAmount * c.fenv.level
+                     + s.fVelocity * c.velocity
+                     + s.lfoCutoff * lfoValue;
+    const int fc = juce::jlimit (0, 2047, (int) std::lround (cut));
+
+    uint8_t filt = 0;
+    for (int vi = 0; vi < 3; ++vi)
+        if (s.voice[vi].filt) filt |= (uint8_t) (1 << vi);
+
+    // The volume register stays at the patch value: changing it per note makes the
+    // chip click (the DC step C64 "digi" playback relies on). Velocity is applied as
+    // a digital gain instead, see noteGain().
+    uint8_t modeVol = (uint8_t) juce::jlimit (0, 15, s.volume);
+    if (s.lp)    modeVol |= 0x10;
+    if (s.bp)    modeVol |= 0x20;
+    if (s.hp)    modeVol |= 0x40;
+    if (s.v3off) modeVol |= 0x80;
+
+    chip.write (regFcLo, (uint8_t) (fc & 0x07));
+    chip.write (regFcHi, (uint8_t) (fc >> 3));
+    chip.write (regResFilt, (uint8_t) ((juce::jlimit (0, 15, s.resonance) << 4) | filt));
+    chip.write (regModeVol, modeVol);
+}
+
+void SidEngine::wakeChip (ChipRT& c, float vel, const EngineSettings& s)
+{
+    c.gainTarget = noteGain (vel, s);
+    if (c.active)
+        return;
+
+    // An idle chip is not clocked, so register writes made since it went quiet would all
+    // land at once on the next note and step its DC level (a click). Bring the patch's
+    // filter and volume state in first, run the chip silently for 2 ms, and start its
+    // DC blocker from wherever the output settled.
+    c.active = true;
+    c.idleTime = 0.0;
+    writeFilterRegs (c, s);
+    c.chip->preroll (std::max (1, juce::roundToInt (sampleRate * 0.002)));
+    c.freshStart = true;
+    c.gainNow = c.gainTarget;
+}
+
+float SidEngine::noteGain (float vel, const EngineSettings& s)
+{
+    return 1.0f - s.velVolume + s.velVolume * vel;
+}
+
 void SidEngine::triggerChip (int ci, int note, float vel, bool retrigger, const EngineSettings& s)
 {
     auto& c = chips[(size_t) ci];
     c.velocity = vel;
     c.lastNote = note;
     c.order = ++orderCounter;
-    c.active = true;
-    c.idleTime = 0.0;
+    wakeChip (c, vel, s);
 
     if (retrigger)
     {
@@ -620,8 +690,13 @@ void SidEngine::triggerVoice (ChipRT& c, int vi, int note, float vel, bool retri
 
     if (retrigger || ! v.gatedInChip)
     {
+        // Only reset the oscillator when the voice has fallen silent: the test bit
+        // snaps the waveform to zero, which clicks if the last note is still releasing.
+        const bool silent = ! v.gatedInChip && v.tOff * 1000.0 > Params::decayMs[s.voice[vi].r];
+        v.resetOsc = s.phaseReset && silent;
+
         const int hrTicks = (int) std::ceil (s.hardRestartMs);   // ticks are 1 ms
-        v.pendingTicks = (v.gatedInChip ? 1 : 0) + hrTicks + (s.phaseReset ? 1 : 0);
+        v.pendingTicks = (v.gatedInChip ? 1 : 0) + hrTicks + (v.resetOsc ? 1 : 0);
         v.startPending = true;
     }
     juce::ignoreUnused (c);
@@ -737,7 +812,7 @@ void SidEngine::updateChip (ChipRT& c, double dt, const EngineSettings& s, bool 
         {
             if (v.pendingTicks > 0)
             {
-                testPulse = s.phaseReset && v.pendingTicks == 1;
+                testPulse = v.resetOsc && v.pendingTicks == 1;
                 hardRestart = s.hardRestartMs > 0.0f;
             }
             else
@@ -845,31 +920,13 @@ void SidEngine::updateChip (ChipRT& c, double dt, const EngineSettings& s, bool 
             maxReleaseMs = std::max (maxReleaseMs, Params::decayMs[p.r]);
     }
 
-    // ---- filter & volume ----
-    const double keyScale = std::pow (2.0, s.fKeyTrack * (c.lastNote - 60) / 12.0);
-    const double cut = s.cutoff * keyScale
-                     + s.fEnvAmount * c.fenv.level
-                     + s.fVelocity * c.velocity
-                     + s.lfoCutoff * lfoValue;
-    const int fc = juce::jlimit (0, 2047, (int) std::lround (cut));
-
-    uint8_t filt = 0;
-    for (int vi = 0; vi < 3; ++vi)
-        if (s.voice[vi].filt) filt |= (uint8_t) (1 << vi);
-
-    const int vol = juce::jlimit (0, 15, (int) std::lround (s.volume * (1.0 - s.velVolume + s.velVolume * c.velocity)));
-    uint8_t modeVol = (uint8_t) vol;
-    if (s.lp)    modeVol |= 0x10;
-    if (s.bp)    modeVol |= 0x20;
-    if (s.hp)    modeVol |= 0x40;
-    if (s.v3off) modeVol |= 0x80;
-
-    chip.write (regFcLo, (uint8_t) (fc & 0x07));
-    chip.write (regFcHi, (uint8_t) (fc >> 3));
-    chip.write (regResFilt, (uint8_t) ((juce::jlimit (0, 15, s.resonance) << 4) | filt));
-    chip.write (regModeVol, modeVol);
+    writeFilterRegs (c, s);
 
     // ---- idle detection: stop clocking chips that have fully released ----
+    // Judged by the chip's actual output: pausing a chip whose envelopes are still
+    // above zero would freeze that sound and restart it abruptly (a click) when the
+    // chip is next woken. The release-time rule is only a backstop for chips that
+    // never quite reach silence.
     if (advance)
     {
         if (anyHeld)
@@ -879,8 +936,32 @@ void SidEngine::updateChip (ChipRT& c, double dt, const EngineSettings& s, bool 
         else
         {
             c.idleTime += dt;
-            if (c.idleTime * 1000.0 > maxReleaseMs * 1.25 + 250.0)
+            const bool silent = c.idleTime > 0.1 && c.recentPeak < 3.0e-5f;   // about -90 dBFS
+            const bool backstop = c.idleTime * 1000.0 > maxReleaseMs * 1.25 + 2000.0;
+            if (silent || backstop)
                 c.active = false;
         }
+        c.recentPeak = 0.0f;
     }
+}
+
+void SidEngine::resetChips()
+{
+    // Start every chip from a clean, silent state: no envelopes left over from the
+    // previous preset. Chips wake (and settle) again on the next note.
+    for (auto& c : chips)
+    {
+        if (c.chip == nullptr)
+            continue;
+        c.chip->reset();
+        for (auto& v : c.v)
+            v = VoiceRT();
+        c.fenv = FilterEnv();
+        c.active = false;
+        c.idleTime = 0.0;
+        c.recentPeak = 0.0f;
+    }
+    monoStack.clear();
+    keyHeld.fill (false);
+    sustained.fill (false);
 }
