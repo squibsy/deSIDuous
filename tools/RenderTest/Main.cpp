@@ -334,6 +334,7 @@ int main (int argc, char** argv)
     std::printf ("%-36s %8s %8s %8s %7s %6s\n", "PRESET", "PEAK dB", "ST-RMS", "ZCR Hz", "TAIL s", "CPU%");
 
     int problems = 0;
+    juce::String levels;   // name, chord/single, peak dB, short-term RMS dB: input for tools/level-presets.ps1
     for (int i = 0; i < plugin->getNumPrograms(); ++i)
     {
         plugin->setCurrentProgram (i);
@@ -341,19 +342,22 @@ int main (int argc, char** argv)
         juce::MessageManager::getInstance()->runDispatchLoopUntil (50);
 
         const auto name = plugin->getProgramName (i);
-        const bool chordy = name.startsWith ("Pad") || name.startsWith ("Keys");
-        const bool bass = name.startsWith ("Bass");
+        const auto category = name.upToFirstOccurrenceOf (":", false, false);
+        // chords for the families normally played polyphonically, low notes for basses
+        const bool chordy = juce::StringArray { "Pad", "Keys", "GM Piano", "GM Organ", "GM Ensemble", "GM Synth Pad" }.contains (category);
+        const bool bass = category == "Bass" || category == "GM Bass";
         const int root = bass ? 36 : 60;
 
         std::vector<std::pair<int, int>> notes { { 1, root } };
         if (chordy) notes = { { 1, 60 }, { 1, 64 }, { 1, 67 } };
 
-        const auto file = outDir.getChildFile (juce::String (i).paddedLeft ('0', 2) + "_" + juce::File::createLegalFileName (name.replace (": ", "_")) + ".wav");
+        const auto file = outDir.getChildFile (juce::String (i).paddedLeft ('0', 3) + "_" + juce::File::createLegalFileName (name.replace (": ", "_")) + ".wav");
         const auto s = render (*plugin, notes, 1.2, 3.5, file);
 
         const bool silent = s.rmsDb < -36.0f;
         const bool hot = s.peakDb > -0.5f;
         if (silent || hot) ++problems;
+        levels << name << "\t" << (chordy ? "chord" : "single") << "\t" << juce::String (s.peakDb, 2) << "\t" << juce::String (s.rmsDb, 2) << "\n";
         std::printf ("%-36s %8.1f %8.1f %8.0f %7.2f %6.1f %s\n", name.toRawUTF8(), s.peakDb, s.rmsDb, s.zcrHz, s.tailSec, s.cpuPercent,
                      silent ? "<< QUIET" : (hot ? "<< CLIPS" : ""));
     }
@@ -405,6 +409,7 @@ int main (int argc, char** argv)
     }
 
     plugin->releaseResources();
+    outDir.getChildFile ("levels.tsv").replaceWithText (levels);
     std::cout << "\n" << problems << " preset(s) flagged\n";
     return 0;
 }

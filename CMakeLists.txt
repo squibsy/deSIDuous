@@ -73,6 +73,8 @@ target_sources(deSIDuous PRIVATE
     Source/Params.cpp
     Source/SidEngine.cpp
     Source/Presets.cpp
+    Source/PresetsExtra.cpp
+    Source/PresetsGM.cpp
     Source/SidLookAndFeel.cpp)
 
 juce_add_binary_data(deSIDuousData SOURCES Resources/logo.png)

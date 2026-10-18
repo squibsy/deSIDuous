@@ -385,15 +385,29 @@ DesiduousEditor::DesiduousEditor (DesiduousProcessor& p)
     setLookAndFeel (&lnf);
 
     const auto& presets = getFactoryPresets();
-    juce::String lastCat;
-    for (int i = 0; i < (int) presets.size(); ++i)
+    // One submenu per category; the General MIDI families are grouped under their own submenu
+    juce::StringArray categories;
+    for (const auto& preset : presets)
+        categories.addIfNotAlreadyThere (preset.category);
+
+    auto* root = presetBox.getRootMenu();
+    juce::PopupMenu generalMidi;
+    for (const auto& cat : categories)
     {
-        if (presets[(size_t) i].category != lastCat)
-        {
-            lastCat = presets[(size_t) i].category;
-            presetBox.addSectionHeading (lastCat.toUpperCase());
-        }
-        presetBox.addItem (presets[(size_t) i].name, i + 1);
+        juce::PopupMenu sub;
+        for (int i = 0; i < (int) presets.size(); ++i)
+            if (presets[(size_t) i].category == cat)
+                sub.addItem (i + 1, presets[(size_t) i].name);
+
+        if (cat.startsWith ("GM "))
+            generalMidi.addSubMenu (cat.fromFirstOccurrenceOf ("GM ", false, false), sub);
+        else
+            root->addSubMenu (cat, sub);
+    }
+    if (generalMidi.getNumItems() > 0)
+    {
+        root->addSeparator();
+        root->addSubMenu ("General MIDI", generalMidi);
     }
     presetBox.setSelectedId (processor.getCurrentProgram() + 1, juce::dontSendNotification);
     presetBox.onChange = [this] { choosePreset (presetBox.getSelectedId() - 1); };

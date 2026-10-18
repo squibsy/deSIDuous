@@ -284,7 +284,7 @@ Use pulse waves on all three voices with **PWM AMT** around 1500 and a different
 
 ## 12. Factory presets
 
-There are 64 presets, level-matched so you can browse without riding the volume.
+There are 256 presets, level-matched so you can browse without riding the volume. In the preset menu they are grouped into submenus by category; the 128 General MIDI instruments are under **General MIDI**. The original 64 are described below.
 
 **Init**
 - **Init Saw**: a plain sawtooth starting point.

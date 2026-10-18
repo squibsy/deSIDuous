@@ -58,9 +58,9 @@ xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/deSIDuous.vst3
 
 ## Presets
 
-There are 64 factory presets, available through the preset menu or your DAW's program list. Categories: Bass, Lead, Pad, Arp, Keys, Drums, FX, and a Waveform showcase.
+There are 256 factory presets, available through the preset menu (grouped into submenus by category) or your DAW's program list. Categories: Bass, Lead, Pad, Arp, Keys, Drums, FX and a Waveform showcase, plus SID interpretations of all 128 General MIDI instruments.
 
-All presets were rendered and level-matched with `RenderTest`. Short-term RMS is about -18 dBFS for single-note patches and -16 dBFS for chords, with peaks below -3 dBFS.
+All presets were rendered and level-matched automatically: `RenderTest` measures each one and `tools/level-presets.ps1` writes the gain corrections in `Source/PresetTrims.inc`. Short-term RMS is about -18 dBFS for single-note patches and -16 dBFS for chords, with peaks below -3 dBFS. `tools/audition.ps1` joins the renders into one MP3 per category for listening.
 
 ## CPU
 
