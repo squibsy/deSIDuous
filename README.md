@@ -1,6 +1,6 @@
-<p align="center"><img src="Resources/logo.png" alt="inSIDious" width="480"></p>
+<p align="center"><img src="Resources/logo.png" alt="deSIDuous" width="640"></p>
 
-# inSIDious
+# deSIDuous
 
 A VST3 instrument built on a cycle-exact emulation of the MOS 6581 and 8580 SID chips (Commodore 64), using **reSIDfp** from libsidplayfp and **JUCE 8**.
 
@@ -8,22 +8,22 @@ The plugin writes real SID registers ($D400 to $D418) at a 1 kHz control rate. E
 
 ## Download
 
-Get the latest version from the **[Releases page](https://github.com/squibsy/inSIDious/releases/latest)**. Each zip contains only the `inSIDious.vst3` plugin; you don't need the source code to use it.
+Get the latest version from the **[Releases page](https://github.com/squibsy/deSIDuous/releases/latest)**. Each zip contains only the `deSIDuous.vst3` plugin; you don't need the source code to use it.
 
-| Platform | File | Copy `inSIDious.vst3` to |
+| Platform | File | Copy `deSIDuous.vst3` to |
 |---|---|---|
-| Windows 10/11 (64-bit) | `inSIDious-<version>-windows-x64-vst3.zip` | `C:\Program Files\Common Files\VST3` |
-| macOS 10.13+ (Apple Silicon and Intel) | `inSIDious-<version>-macos-universal-vst3.zip` | `/Library/Audio/Plug-Ins/VST3` or `~/Library/Audio/Plug-Ins/VST3` |
-| Linux (64-bit) | `inSIDious-<version>-linux-x64-vst3.zip` | `~/.vst3` |
+| Windows 10/11 (64-bit) | `deSIDuous-<version>-windows-x64-vst3.zip` | `C:\Program Files\Common Files\VST3` |
+| macOS 10.13+ (Apple Silicon and Intel) | `deSIDuous-<version>-macos-universal-vst3.zip` | `/Library/Audio/Plug-Ins/VST3` or `~/Library/Audio/Plug-Ins/VST3` |
+| Linux (64-bit) | `deSIDuous-<version>-linux-x64-vst3.zip` | `~/.vst3` |
 
-Then rescan plugins in your DAW. inSIDious appears as an instrument from "Bananalytics".
+Then rescan plugins in your DAW. deSIDuous appears as an instrument from "Bananalytics".
 
 📖 **[Read the user manual](docs/MANUAL.md)** for a guide to every control, sound design recipes and the preset list.
 
 **macOS:** the plugin isn't notarised by Apple, so macOS may block it the first time. After copying it, run this once in Terminal (adjust the path if you used `~/Library`):
 
 ```bash
-xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/inSIDious.vst3
+xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/deSIDuous.vst3
 ```
 
 **Linux:** built on Ubuntu 22.04. It should work on any distribution from about 2022 onwards.
@@ -71,19 +71,19 @@ Cycle-exact emulation runs each chip at about 1 MHz. On the development machine,
 You need Visual Studio 2022 Build Tools (C++ workload) and CMake 3.22 or later. JUCE and libsidplayfp are git submodules in `libs/`, pinned to JUCE 8.0.15 and libsidplayfp 2.16.1. Clone with `--recursive`, or run `git submodule update --init` after a normal clone.
 
 ```bash
-git clone --recursive https://github.com/squibsy/inSIDious.git
-cd inSIDious
+git clone --recursive https://github.com/squibsy/deSIDuous.git
+cd deSIDuous
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target inSIDious_VST3
+cmake --build build --config Release --target deSIDuous_VST3
 ```
 
-The output is `build/inSIDious_artefacts/Release/VST3/inSIDious.vst3`. To install it, copy that folder into `C:\Program Files\Common Files\VST3`.
+The output is `build/deSIDuous_artefacts/Release/VST3/deSIDuous.vst3`. To install it, copy that folder into `C:\Program Files\Common Files\VST3`.
 
 ### Tests
 
 ```bash
 cmake --build build --config Release --target RenderTest NoiseTest
-build/RenderTest_artefacts/Release/RenderTest.exe build/inSIDious_artefacts/Release/VST3/inSIDious.vst3 renders
+build/RenderTest_artefacts/Release/RenderTest.exe build/deSIDuous_artefacts/Release/VST3/deSIDuous.vst3 renders
 ```
 
 `RenderTest` loads the built VST3 the way a DAW would. It renders every preset to `renders/*.wav`, prints peak level, short-term RMS, brightness, tail length and CPU per preset, and checks the voice modes and the state save/restore. Pass `--ui <program>` to open the editor in a window instead. `NoiseTest` drives reSIDfp directly, as a reference. `tools/screenshots.ps1` regenerates the manual's screenshots from the built plugin (Windows).

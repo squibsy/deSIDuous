@@ -1,6 +1,6 @@
 name: Build
 
-# Builds the inSIDious VST3 for Windows, macOS (universal) and Linux.
+# Builds the deSIDuous VST3 for Windows, macOS (universal) and Linux.
 # - every push to main: zips are kept as workflow artifacts
 # - pushing a v* tag (or running manually with a tag): zips are attached to that GitHub release
 
@@ -47,20 +47,20 @@ jobs:
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
-        run: cmake -S . -B build -A x64 -DINSIDIOUS_BUILD_TESTS=OFF
+        run: cmake -S . -B build -A x64 -DDESIDUOUS_BUILD_TESTS=OFF
 
       - name: Configure (macOS)
         if: runner.os == 'macOS'
         run: >
-          cmake -S . -B build -G Xcode -DINSIDIOUS_BUILD_TESTS=OFF
+          cmake -S . -B build -G Xcode -DDESIDUOUS_BUILD_TESTS=OFF
           -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
 
       - name: Configure (Linux)
         if: runner.os == 'Linux'
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DINSIDIOUS_BUILD_TESTS=OFF
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDESIDUOUS_BUILD_TESTS=OFF
 
       - name: Build
-        run: cmake --build build --config Release --target inSIDious_VST3 --parallel
+        run: cmake --build build --config Release --target deSIDuous_VST3 --parallel
 
       - name: Label
         id: label
@@ -73,17 +73,17 @@ jobs:
 
       - name: Ad-hoc sign (macOS)
         if: runner.os == 'macOS'
-        run: codesign --force --deep --sign - build/inSIDious_artefacts/Release/VST3/inSIDious.vst3
+        run: codesign --force --deep --sign - build/deSIDuous_artefacts/Release/VST3/deSIDuous.vst3
 
       - name: Package
         shell: bash
         run: |
-          ZIP="inSIDious-${{ steps.label.outputs.version }}-${{ matrix.name }}-vst3.zip"
-          cd build/inSIDious_artefacts/Release/VST3
+          ZIP="deSIDuous-${{ steps.label.outputs.version }}-${{ matrix.name }}-vst3.zip"
+          cd build/deSIDuous_artefacts/Release/VST3
           case "${{ runner.os }}" in
-            Windows) 7z a -tzip "$GITHUB_WORKSPACE/$ZIP" inSIDious.vst3 ;;
-            macOS)   ditto -c -k --keepParent inSIDious.vst3 "$GITHUB_WORKSPACE/$ZIP" ;;
-            Linux)   zip -r -y "$GITHUB_WORKSPACE/$ZIP" inSIDious.vst3 ;;
+            Windows) 7z a -tzip "$GITHUB_WORKSPACE/$ZIP" deSIDuous.vst3 ;;
+            macOS)   ditto -c -k --keepParent deSIDuous.vst3 "$GITHUB_WORKSPACE/$ZIP" ;;
+            Linux)   zip -r -y "$GITHUB_WORKSPACE/$ZIP" deSIDuous.vst3 ;;
           esac
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
@@ -109,5 +109,5 @@ jobs:
         run: |
           ls -l dist
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 \
-            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "inSIDious $TAG" --generate-notes
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "deSIDuous $TAG" --generate-notes
           gh release upload "$TAG" dist/*.zip --repo "$GITHUB_REPOSITORY" --clobber

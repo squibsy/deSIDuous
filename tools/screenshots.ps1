@@ -4,10 +4,10 @@
 #
 #   powershell -File tools\screenshots.ps1
 #
-# Panel rectangles are in editor (logical) pixels and match InsidiousEditor::resized().
+# Panel rectangles are in editor (logical) pixels and match DesiduousEditor::resized().
 
 param(
-    [string]$Plugin = "$PSScriptRoot\..\build\inSIDious_artefacts\Release\VST3\inSIDious.vst3",
+    [string]$Plugin = "$PSScriptRoot\..\build\deSIDuous_artefacts\Release\VST3\deSIDuous.vst3",
     [string]$Host_  = "$PSScriptRoot\..\build\RenderTest_artefacts\Release\RenderTest.exe",
     [string]$OutDir = "$PSScriptRoot\..\docs\images",
     [double]$Scale  = 1.25,     # output pixels per editor pixel

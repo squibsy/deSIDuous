@@ -2,9 +2,9 @@
 #include "PluginEditor.h"
 #include "Presets.h"
 
-InsidiousProcessor::InsidiousProcessor()
+DesiduousProcessor::DesiduousProcessor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      state (*this, nullptr, "inSIDious", Params::createLayout())
+      state (*this, nullptr, "deSIDuous", Params::createLayout())
 {
     auto get = [this] (const juce::String& id) {
         auto* p = state.getRawParameterValue (id);
@@ -48,20 +48,20 @@ InsidiousProcessor::InsidiousProcessor()
     setCurrentProgram (1);
 }
 
-InsidiousProcessor::~InsidiousProcessor()
+DesiduousProcessor::~DesiduousProcessor()
 {
     cancelPendingUpdate();
     state.removeParameterListener (Params::clock, this);
     state.removeParameterListener (Params::quality, this);
 }
 
-bool InsidiousProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool DesiduousProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     const auto& out = layouts.getMainOutputChannelSet();
     return out == juce::AudioChannelSet::mono() || out == juce::AudioChannelSet::stereo();
 }
 
-EngineSettings InsidiousProcessor::snapshot() const
+EngineSettings DesiduousProcessor::snapshot() const
 {
     auto b = [] (const std::atomic<float>* p) { return p->load() > 0.5f; };
     auto i = [] (const std::atomic<float>* p) { return juce::roundToInt (p->load()); };
@@ -93,7 +93,7 @@ EngineSettings InsidiousProcessor::snapshot() const
     return s;
 }
 
-void InsidiousProcessor::prepareToPlay (double sampleRate, int)
+void DesiduousProcessor::prepareToPlay (double sampleRate, int)
 {
     if (sampleRate != currentSampleRate || engine.needsRebuild (snapshot()))
     {
@@ -103,19 +103,19 @@ void InsidiousProcessor::prepareToPlay (double sampleRate, int)
     keyboardState.reset();
 }
 
-void InsidiousProcessor::parameterChanged (const juce::String&, float)
+void DesiduousProcessor::parameterChanged (const juce::String&, float)
 {
     triggerAsyncUpdate();   // rebuild chips on the message thread (resampler tables are expensive)
 }
 
-void InsidiousProcessor::handleAsyncUpdate()
+void DesiduousProcessor::handleAsyncUpdate()
 {
     const auto s = snapshot();
     if (currentSampleRate > 0.0 && engine.needsRebuild (s))
         engine.rebuildChips (currentSampleRate, s);
 }
 
-void InsidiousProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
+void DesiduousProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
     keyboardState.processNextMidiBuffer (midi, 0, buffer.getNumSamples(), true);
@@ -123,12 +123,12 @@ void InsidiousProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
 }
 
 //==============================================================================
-int InsidiousProcessor::getNumPrograms()
+int DesiduousProcessor::getNumPrograms()
 {
     return (int) getFactoryPresets().size();
 }
 
-void InsidiousProcessor::setCurrentProgram (int index)
+void DesiduousProcessor::setCurrentProgram (int index)
 {
     const auto& presets = getFactoryPresets();
     if (! juce::isPositiveAndBelow (index, (int) presets.size()))
@@ -138,13 +138,13 @@ void InsidiousProcessor::setCurrentProgram (int index)
     applyPreset (state, presets[(size_t) index]);
 }
 
-const juce::String InsidiousProcessor::getProgramName (int index)
+const juce::String DesiduousProcessor::getProgramName (int index)
 {
     const auto& presets = getFactoryPresets();
     return juce::isPositiveAndBelow (index, (int) presets.size()) ? presets[(size_t) index].displayName() : juce::String();
 }
 
-void InsidiousProcessor::getStateInformation (juce::MemoryBlock& destData)
+void DesiduousProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto tree = state.copyState();
     tree.setProperty ("program", currentProgram, nullptr);
@@ -152,7 +152,7 @@ void InsidiousProcessor::getStateInformation (juce::MemoryBlock& destData)
         copyXmlToBinary (*xml, destData);
 }
 
-void InsidiousProcessor::setStateInformation (const void* data, int sizeInBytes)
+void DesiduousProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (state.state.getType()))
@@ -163,12 +163,12 @@ void InsidiousProcessor::setStateInformation (const void* data, int sizeInBytes)
         }
 }
 
-juce::AudioProcessorEditor* InsidiousProcessor::createEditor()
+juce::AudioProcessorEditor* DesiduousProcessor::createEditor()
 {
-    return new InsidiousEditor (*this);
+    return new DesiduousEditor (*this);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new InsidiousProcessor();
+    return new DesiduousProcessor();
 }

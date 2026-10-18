@@ -372,7 +372,7 @@ void RegisterView::paint (juce::Graphics& g)
 }
 
 //==============================================================================
-InsidiousEditor::InsidiousEditor (InsidiousProcessor& p)
+DesiduousEditor::DesiduousEditor (DesiduousProcessor& p)
     : AudioProcessorEditor (&p), processor (p),
       chip (p.state, Params::chipModel, "CHIP", "MOS 6581: warm, distorted, non-linear filter. MOS 8580: cleaner, linear filter, stronger combined waveforms."),
       mode (p.state, Params::voiceMode, "VOICE MODE", "Layered Poly: each note plays all 3 voices on its own chip. Paraphonic: one chip, one note per voice. MIDI Ch 1-3: channel N drives voice N."),
@@ -436,12 +436,12 @@ InsidiousEditor::InsidiousEditor (InsidiousProcessor& p)
     startTimerHz (10);
 }
 
-InsidiousEditor::~InsidiousEditor()
+DesiduousEditor::~DesiduousEditor()
 {
     setLookAndFeel (nullptr);
 }
 
-void InsidiousEditor::choosePreset (int index)
+void DesiduousEditor::choosePreset (int index)
 {
     if (index < 0 || index >= processor.getNumPrograms())
         return;
@@ -450,14 +450,14 @@ void InsidiousEditor::choosePreset (int index)
     presetBox.setSelectedId (index + 1, juce::dontSendNotification);
 }
 
-void InsidiousEditor::timerCallback()
+void DesiduousEditor::timerCallback()
 {
     const int id = processor.getCurrentProgram() + 1;
     if (presetBox.getSelectedId() != id)
         presetBox.setSelectedId (id, juce::dontSendNotification);
 }
 
-void InsidiousEditor::paint (juce::Graphics& g)
+void DesiduousEditor::paint (juce::Graphics& g)
 {
     g.fillAll (C64::background);
 
@@ -466,8 +466,10 @@ void InsidiousEditor::paint (juce::Graphics& g)
     g.setColour (Logo::night);
     g.fillRect (headerArea);
 
-    auto header = headerArea.reduced (12, 0);
-    auto logoArea = header.removeFromLeft (logoWidth).reduced (0, 8);
+    // logo on the left with a one-line caption underneath
+    auto logoColumn = headerArea.withTrimmedLeft (12).withWidth (logoWidth).withTrimmedBottom (4);
+    auto caption = logoColumn.removeFromBottom (18);
+    auto logoArea = logoColumn.withTrimmedTop (6);
     if (logo.isValid())
     {
         g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
@@ -475,37 +477,36 @@ void InsidiousEditor::paint (juce::Graphics& g)
                            juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
     }
 
-    auto caption = header.removeFromLeft (110).withSizeKeepingCentre (110, 30).withTrimmedLeft (8);
     g.setFont (SidLookAndFeel::monoFont (11.0f, false));
     g.setColour (Logo::cyan);
-    g.drawText ("MOS 6581/8580", caption.removeFromTop (15), juce::Justification::centredLeft);
-    g.setColour (Logo::pink);
-    g.drawText ("SID SYNTH  v" JucePlugin_VersionString, caption, juce::Justification::centredLeft);
+    g.drawText ("MOS 6581/8580 SID SYNTH", caption, juce::Justification::centredLeft);
+    g.setColour (Logo::blue);
+    g.drawText ("v" JucePlugin_VersionString, caption, juce::Justification::centredRight);
 
-    // pink / cyan split line under the header, echoing the logo's offset print
+    // cyan / blue split line under the header, echoing the logo's two-tone lettering
     auto line = headerArea.removeFromBottom (4);
     g.setColour (Logo::cyan);
     g.fillRect (line.removeFromTop (2));
-    g.setColour (Logo::pink);
+    g.setColour (Logo::blue);
     g.fillRect (line.translated (6, 0));
 }
 
-void InsidiousEditor::resized()
+void DesiduousEditor::resized()
 {
     const int gap = 8;
     auto area = getLocalBounds().reduced (gap, 0);
 
     auto header = area.removeFromTop (headerHeight).withTrimmedBottom (4);
     header = header.withSizeKeepingCentre (header.getWidth(), 40);
-    header.removeFromLeft (logoWidth + 110 + 12);
-    auto presetArea = header.removeFromLeft (330);
+    header.removeFromLeft (4 + logoWidth + 16);
+    auto presetArea = header.removeFromLeft (300);
     prevButton.setBounds (presetArea.removeFromLeft (28).withTrimmedTop (14).withHeight (22));
     nextButton.setBounds (presetArea.removeFromRight (28).withTrimmedTop (14).withHeight (22));
     presetBox.setBounds (presetArea.reduced (4, 0).withTrimmedTop (14).withHeight (22));
-    header.removeFromLeft (12);
-    chip.setBounds (header.removeFromLeft (130).reduced (3, 0));
-    mode.setBounds (header.removeFromLeft (200).reduced (3, 0));
-    clock.setBounds (header.removeFromLeft (170).reduced (3, 0));
+    header.removeFromLeft (8);
+    chip.setBounds (header.removeFromLeft (120).reduced (3, 0));
+    mode.setBounds (header.removeFromLeft (190).reduced (3, 0));
+    clock.setBounds (header.removeFromLeft (160).reduced (3, 0));
 
     area.removeFromTop (gap);
     const int colW = (area.getWidth() - 2 * gap) / 3;

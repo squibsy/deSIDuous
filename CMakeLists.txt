@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(inSIDious VERSION 1.01 LANGUAGES C CXX)
+project(deSIDuous VERSION 1.02 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,12 +52,12 @@ endif()
 # ---------------------------------------------------------------------------
 # The plugin
 # ---------------------------------------------------------------------------
-juce_add_plugin(inSIDious
+juce_add_plugin(deSIDuous
     COMPANY_NAME "Bananalytics"
-    BUNDLE_ID "ie.bananalytics.insidious"
+    BUNDLE_ID "ie.bananalytics.desiduous"
     PLUGIN_MANUFACTURER_CODE Bnly
     PLUGIN_CODE Sid8
-    PRODUCT_NAME "inSIDious"
+    PRODUCT_NAME "deSIDuous"
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
@@ -67,7 +67,7 @@ juce_add_plugin(inSIDious
     VST3_CATEGORIES Instrument Synth
     FORMATS VST3)
 
-target_sources(inSIDious PRIVATE
+target_sources(deSIDuous PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
     Source/Params.cpp
@@ -75,18 +75,18 @@ target_sources(inSIDious PRIVATE
     Source/Presets.cpp
     Source/SidLookAndFeel.cpp)
 
-juce_add_binary_data(inSIDiousData SOURCES Resources/logo.png)
+juce_add_binary_data(deSIDuousData SOURCES Resources/logo.png)
 
-target_compile_definitions(inSIDious PUBLIC
+target_compile_definitions(deSIDuous PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0)
 
-target_link_libraries(inSIDious
+target_link_libraries(deSIDuous
     PRIVATE
         residfp
-        inSIDiousData
+        deSIDuousData
         juce::juce_audio_utils
     PUBLIC
         juce::juce_recommended_config_flags
@@ -96,8 +96,8 @@ target_link_libraries(inSIDious
 # ---------------------------------------------------------------------------
 # Offline test host (optional): renders every preset from the built VST3
 # ---------------------------------------------------------------------------
-option(INSIDIOUS_BUILD_TESTS "Build the RenderTest host" ON)
-if(INSIDIOUS_BUILD_TESTS)
+option(DESIDUOUS_BUILD_TESTS "Build the RenderTest host" ON)
+if(DESIDUOUS_BUILD_TESTS)
     juce_add_console_app(RenderTest PRODUCT_NAME "RenderTest")
     target_sources(RenderTest PRIVATE tools/RenderTest/Main.cpp)
     target_compile_definitions(RenderTest PRIVATE
@@ -111,7 +111,7 @@ if(INSIDIOUS_BUILD_TESTS)
         juce::juce_recommended_config_flags)
 endif()
 
-if(INSIDIOUS_BUILD_TESTS)
+if(DESIDUOUS_BUILD_TESTS)
     add_executable(NoiseTest tools/NoiseTest/main.cpp)
     target_link_libraries(NoiseTest PRIVATE residfp)
 endif()

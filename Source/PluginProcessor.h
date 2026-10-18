@@ -3,13 +3,13 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "SidEngine.h"
 
-class InsidiousProcessor : public juce::AudioProcessor,
+class DesiduousProcessor : public juce::AudioProcessor,
                            private juce::AudioProcessorValueTreeState::Listener,
                            private juce::AsyncUpdater
 {
 public:
-    InsidiousProcessor();
-    ~InsidiousProcessor() override;
+    DesiduousProcessor();
+    ~DesiduousProcessor() override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -59,5 +59,5 @@ private:
     int currentProgram = 0;
     std::atomic<bool> rebuilding { false };
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (InsidiousProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DesiduousProcessor)
 };

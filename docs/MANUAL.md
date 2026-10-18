@@ -1,14 +1,14 @@
-<p align="center"><img src="../Resources/logo.png" alt="inSIDious" width="420"></p>
+<p align="center"><img src="../Resources/logo.png" alt="deSIDuous" width="640"></p>
 
-# inSIDious User Manual
+# deSIDuous User Manual
 
-Version 1.01
+Version 1.02
 
-inSIDious is a software instrument that recreates the sound chip of the Commodore 64: the MOS 6581 and its later revision, the 8580, known as the **SID** (Sound Interface Device). Instead of imitating the SID's sound with ordinary synth building blocks, inSIDious runs a cycle-exact emulation of the chip (reSIDfp) and plays it by writing the chip's real registers, the same way a C64 music program does.
+deSIDuous is a software instrument that recreates the sound chip of the Commodore 64: the MOS 6581 and its later revision, the 8580, known as the **SID** (Sound Interface Device). Instead of imitating the SID's sound with ordinary synth building blocks, deSIDuous runs a cycle-exact emulation of the chip (reSIDfp) and plays it by writing the chip's real registers, the same way a C64 music program does.
 
 The SID's quirks come from the emulated chip itself: combined waveforms, ring modulation, hard sync, the envelope bugs, and the very different filters of the two chip models.
 
-![The inSIDious window](images/ui-overview.png)
+![The deSIDuous window](images/ui-overview.png)
 
 ## Contents
 
@@ -33,25 +33,25 @@ The SID's quirks come from the emulated chip itself: combined waveforms, ring mo
 
 ## 1. Installation
 
-Download the zip for your system from the [Releases page](https://github.com/squibsy/inSIDious/releases/latest). Each zip contains a single `inSIDious.vst3` plugin.
+Download the zip for your system from the [Releases page](https://github.com/squibsy/deSIDuous/releases/latest). Each zip contains a single `deSIDuous.vst3` plugin.
 
-| System | Copy `inSIDious.vst3` to |
+| System | Copy `deSIDuous.vst3` to |
 |---|---|
 | Windows 10/11 (64-bit) | `C:\Program Files\Common Files\VST3` |
 | macOS 10.13 or later (Apple Silicon and Intel) | `/Library/Audio/Plug-Ins/VST3` (all users) or `~/Library/Audio/Plug-Ins/VST3` (just you) |
 | Linux (64-bit) | `~/.vst3` |
 
-Then open your DAW and rescan plugins. inSIDious appears as an **instrument** from **Bananalytics**.
+Then open your DAW and rescan plugins. deSIDuous appears as an **instrument** from **Bananalytics**.
 
 **macOS:** the plugin is not notarised by Apple, so macOS may refuse to load it. After copying, open Terminal and run this once (change the path if you installed to `~/Library`):
 
 ```bash
-xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/inSIDious.vst3
+xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/deSIDuous.vst3
 ```
 
 ## 2. Quick start
 
-1. Add inSIDious to an instrument track in your DAW.
+1. Add deSIDuous to an instrument track in your DAW.
 2. Pick a sound from the **preset menu** in the header, or step through presets with the **<** and **>** buttons.
 3. Play from your MIDI keyboard, or click the on-screen keyboard at the bottom of the window.
 4. To tweak a preset, start with a voice's **waveform buttons** (TRI, SAW, PUL, NOI), its **ADSR** bars, and the filter's **CUTOFF** and **RES** knobs.
@@ -69,7 +69,7 @@ A short tour of the chip helps make sense of the controls.
 - **No per-voice volume.** The only volume control is a 4-bit master volume for the whole chip. A voice's loudness comes from its envelope's sustain level.
 - **Ring mod and sync link the voices.** Voice 1 can be ring-modulated or synced by voice 3, voice 2 by voice 1, and voice 3 by voice 2.
 
-Classic C64 music made rich sounds from these limits with tricks: rapid arpeggios to fake chords, fast waveform switching for drums, and pulse width sweeps for movement. inSIDious adds those tricks as controls (see [Voice panels](#5-voice-panels) and [LFO, arpeggio and glide](#7-lfo-arpeggio-and-glide)).
+Classic C64 music made rich sounds from these limits with tricks: rapid arpeggios to fake chords, fast waveform switching for drums, and pulse width sweeps for movement. deSIDuous adds those tricks as controls (see [Voice panels](#5-voice-panels) and [LFO, arpeggio and glide](#7-lfo-arpeggio-and-glide)).
 
 ## 4. The header bar
 
@@ -180,7 +180,7 @@ One shared LFO (low-frequency oscillator) for vibrato and movement.
 
 ![Arpeggio set to a major chord](images/mod-arp.png)
 
-On the C64, chords were usually faked by cycling one voice through the chord notes very fast. inSIDious has this built in.
+On the C64, chords were usually faked by cycling one voice through the chord notes very fast. deSIDuous has this built in.
 
 | Control | What it does |
 |---|---|
@@ -219,7 +219,7 @@ Only voices with **ARP** on follow the arpeggio. In Held Notes mode, voices with
 ![Oscilloscope and register monitor](images/scope-registers.png)
 
 - **OSCILLOSCOPE** shows the plugin's output waveform.
-- **REGISTERS $D400-$D418** shows the 25 SID registers exactly as inSIDious writes them, in hex, for the chip that played most recently. They're colour-coded by voice, with the filter and volume registers in yellow. **ACTIVE CHIPS** shows how many chips are currently sounding.
+- **REGISTERS $D400-$D418** shows the 25 SID registers exactly as deSIDuous writes them, in hex, for the chip that played most recently. They're colour-coded by voice, with the filter and volume registers in yellow. **ACTIVE CHIPS** shows how many chips are currently sounding.
 
 ### Combined waveforms
 
@@ -347,7 +347,7 @@ There are 64 presets, level-matched so you can browse without riding the volume.
 - **Tri+Pulse (8580)**, **Tri+Saw+Pulse (8580)**, **Saw+Pulse (6581)** and **Tri+Saw (6581)**: hear what combined waveforms sound like on each chip.
 - **All Three Voices**: triangle, saw and pulse on the three voices at once.
 
-To keep your own versions, save them with your DAW's preset or project features. inSIDious stores every setting in the project.
+To keep your own versions, save them with your DAW's preset or project features. deSIDuous stores every setting in the project.
 
 ## 13. MIDI reference
 
@@ -362,12 +362,12 @@ To keep your own versions, save them with your DAW's preset or project features.
 
 ## 14. CPU usage
 
-inSIDious emulates the SID cycle by cycle: about a million chip cycles per second, per chip. Each sounding chip uses roughly 8 to 10% of one CPU core at 48 kHz on a typical desktop.
+deSIDuous emulates the SID cycle by cycle: about a million chip cycles per second, per chip. Each sounding chip uses roughly 8 to 10% of one CPU core at 48 kHz on a typical desktop.
 
 - Only chips that are sounding use CPU. A silent instance costs almost nothing.
 - In Layered Poly mode, every note held (or still in its release) uses a chip. Lower **POLY**, or shorten long releases, to save CPU.
 - Paraphonic and MIDI Ch 1-3 modes always use just one chip.
-- If your DAW struggles, freeze or render inSIDious tracks to audio.
+- If your DAW struggles, freeze or render deSIDuous tracks to audio.
 
 ## 15. Troubleshooting
 
@@ -375,7 +375,7 @@ inSIDious emulates the SID cycle by cycle: about a million chip cycles per secon
 
 **A note sometimes starts late or quietly.** That's the SID's envelope bug, faithfully emulated. Set **HARD RST** to a few milliseconds.
 
-**Noise goes silent.** On a real SID, combining noise with another waveform can lock up the noise generator, and inSIDious emulates this. Avoid combining **NOI** with other waveforms. To unlock it, switch the voice's **TEST** button on for about a second, then off again.
+**Noise goes silent.** On a real SID, combining noise with another waveform can lock up the noise generator, and deSIDuous emulates this. Avoid combining **NOI** with other waveforms. To unlock it, switch the voice's **TEST** button on for about a second, then off again.
 
 **Notes stop when I change preset.** Changing the voice mode, polyphony or arpeggio mode (which many presets do) releases held notes. That's expected.
 
@@ -431,4 +431,4 @@ All settings can be automated from your DAW. Ranges are given in the units shown
 
 ---
 
-inSIDious is free software under the AGPLv3 licence. Source code: [github.com/squibsy/inSIDious](https://github.com/squibsy/inSIDious). SID emulation by reSIDfp (libsidplayfp project); plugin framework by JUCE.
+deSIDuous is free software under the AGPLv3 licence. Source code: [github.com/squibsy/deSIDuous](https://github.com/squibsy/deSIDuous). SID emulation by reSIDfp (libsidplayfp project); plugin framework by JUCE.
