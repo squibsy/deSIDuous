@@ -2,6 +2,13 @@
 // to a WAV file and prints level / brightness / CPU statistics.
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <cstdio>
+#include "WinCapture.h"
+
+#ifndef _WIN32
+ #define _popen popen
+ #define _pclose pclose
+#endif
 
 namespace
 {
@@ -92,6 +99,170 @@ namespace
     }
 }
 
+namespace
+{
+    // ---- Demo recording: plays tools/demo/demo-script.txt in real time and records the
+    // audio, while ffmpeg (Desktop Duplication, Windows) records the plugin window.
+    struct DemoEvent
+    {
+        enum Type { NoteOff = 0, Program = 1, NoteOn = 2 } type;
+        double t;
+        int a = 0, b = 0, ch = 1;
+    };
+
+    struct DemoSweep { double t0, t1; juce::String param; float v0, v1; juce::AudioProcessorParameter* p = nullptr; };
+
+    void writeWav (const juce::AudioBuffer<float>& buffer, int numSamples, const juce::File& file)
+    {
+        file.deleteFile();
+        juce::WavAudioFormat wav;
+        if (auto stream = file.createOutputStream())
+            if (auto writer = std::unique_ptr<juce::AudioFormatWriter> (wav.createWriterFor (stream.get(), sr, 2, 24, {}, 0)))
+            {
+                stream.release();
+                writer->writeFromAudioSampleBuffer (buffer, 0, numSamples);
+            }
+    }
+
+    int runDemo (juce::AudioPluginInstance& plugin, const juce::File& script, const juce::File& outDir, const juce::String& ffmpeg)
+    {
+        std::vector<DemoEvent> events;
+        std::vector<DemoSweep> sweeps;
+        double endTime = 0.0;
+
+        for (auto line : juce::StringArray::fromLines (script.loadFileAsString()))
+        {
+            line = line.trim();
+            if (line.isEmpty() || line.startsWith ("#"))
+                continue;
+            auto tok = juce::StringArray::fromTokens (line, " \t", "");
+            tok.removeEmptyStrings();
+            const auto& cmd = tok[0];
+
+            if (cmd == "preset")
+                events.push_back ({ DemoEvent::Program, tok[1].getDoubleValue(), tok[2].getIntValue() });
+            else if (cmd == "note")
+            {
+                const double t = tok[1].getDoubleValue(), dur = tok[2].getDoubleValue();
+                const int note = tok[3].getIntValue();
+                const int vel = tok.size() > 4 ? tok[4].getIntValue() : 100;
+                const int ch = tok.size() > 5 ? tok[5].getIntValue() : 1;
+                events.push_back ({ DemoEvent::NoteOn, t, note, vel, ch });
+                events.push_back ({ DemoEvent::NoteOff, t + dur, note, 0, ch });
+            }
+            else if (cmd == "sweep")
+                sweeps.push_back ({ tok[1].getDoubleValue(), tok[2].getDoubleValue(), tok[3].replace ("_", " "),
+                                    tok[4].getFloatValue(), tok[5].getFloatValue() });
+            else if (cmd == "end")
+                endTime = tok[1].getDoubleValue();
+        }
+
+        std::stable_sort (events.begin(), events.end(), [] (const DemoEvent& x, const DemoEvent& y) {
+            return x.t != y.t ? x.t < y.t : x.type < y.type;
+        });
+        for (auto& s : sweeps)
+            if ((s.p = findParam (plugin, s.param)) == nullptr)
+                std::cout << "warning: no parameter named " << s.param << "\n";
+
+        juce::DocumentWindow window ("deSIDuous demo", juce::Colours::black, 0);
+        window.setUsingNativeTitleBar (true);
+        window.setContentOwned (plugin.createEditorAndMakeActive(), true);
+        window.setTopLeftPosition (20, 20);
+        window.setAlwaysOnTop (true);   // the capture reads the screen, so nothing may cover the window
+        window.setVisible (true);
+        window.toFront (true);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (1500);
+
+        int cx = 0, cy = 0, cw = 0, chh = 0;
+        if (! getClientScreenRect (window.getPeer()->getNativeHandle(), cx, cy, cw, chh) || cw == 0)
+        {
+            std::cout << "cannot read window position\n";
+            return 1;
+        }
+        std::cout << "window client " << cw << "x" << chh << " at " << cx << "," << cy << "\n";
+
+        // Sync marker: a white cover over the plugin that disappears at the instant the
+        // music starts. make-video.ps1 finds the first non-white frame and aligns the audio to it.
+        struct Cover : juce::Component { void paint (juce::Graphics& g) override { g.fillAll (juce::Colours::white); } } cover;
+        cover.setOpaque (true);
+        cover.addToDesktop (juce::ComponentPeer::windowIsTemporary);
+        cover.setBounds (window.getContentComponent()->getScreenBounds());
+        cover.setAlwaysOnTop (true);
+        cover.setVisible (true);
+        cover.toFront (false);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
+
+        // ffmpeg's Desktop Duplication capture (GPU) records the window region at a steady 30 fps.
+        const auto videoFile = outDir.getChildFile ("ui.mkv");
+        const juce::String cmd = "\"\"" + ffmpeg + "\" -y -loglevel error -f lavfi -i \"ddagrab=output_idx=0:framerate=30:draw_mouse=0"
+                               + ":offset_x=" + juce::String (cx) + ":offset_y=" + juce::String (cy)
+                               + ":video_size=" + juce::String (cw) + "x" + juce::String (chh)
+                               + ",hwdownload,format=bgra,scale=" + juce::String (cw / 2) + ":" + juce::String (chh / 2) + ":flags=area\""
+                               + " -t " + juce::String (endTime + 6.0, 1)
+                               + " -c:v utvideo -pix_fmt gbrp \"" + videoFile.getFullPathName() + "\"\"";
+        FILE* pipe = _popen (cmd.toRawUTF8(), "w");
+        if (pipe == nullptr)
+        {
+            std::cout << "cannot start ffmpeg\n";
+            return 1;
+        }
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (2500);   // ffmpeg start-up + white pre-roll
+
+        const int total = (int) std::ceil (endTime * sr);
+        juce::AudioBuffer<float> out (2, total + block);
+        out.clear();
+        juce::AudioBuffer<float> buf (2, block);
+        juce::MidiBuffer midi;
+
+        size_t next = 0;
+        int pos = 0;
+        plugin.reset();
+        cover.setVisible (false);
+        const double t0 = juce::Time::getMillisecondCounterHiRes();
+
+        while (pos < total)
+        {
+            const double now = (juce::Time::getMillisecondCounterHiRes() - t0) * 0.001;
+            const int target = juce::jmin (total, (int) (now * sr));
+
+            while (pos < target)
+            {
+                const double bt0 = pos / sr, bt1 = (pos + block) / sr;
+                midi.clear();
+                for (; next < events.size() && events[next].t < bt1; ++next)
+                {
+                    const auto& e = events[next];
+                    const int offset = juce::jlimit (0, block - 1, (int) ((e.t - bt0) * sr));
+                    if (e.type == DemoEvent::Program)
+                        plugin.setCurrentProgram (e.a);
+                    else if (e.type == DemoEvent::NoteOn)
+                        midi.addEvent (juce::MidiMessage::noteOn (e.ch, e.a, (juce::uint8) e.b), offset);
+                    else
+                        midi.addEvent (juce::MidiMessage::noteOff (e.ch, e.a), offset);
+                }
+                for (auto& s : sweeps)
+                    if (s.p != nullptr && bt0 >= s.t0 && bt0 <= s.t1)
+                        s.p->setValueNotifyingHost (s.v0 + (s.v1 - s.v0) * (float) ((bt0 - s.t0) / (s.t1 - s.t0)));
+
+                buf.clear();
+                plugin.processBlock (buf, midi);
+                for (int c = 0; c < 2; ++c)
+                    out.copyFrom (c, pos, buf, c, 0, block);
+                pos += block;
+            }
+
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (4);   // let the editor repaint
+        }
+
+        // keep the window up until ffmpeg has finished its fixed-length capture
+        _pclose (pipe);
+        writeWav (out, total, outDir.getChildFile ("audio.wav"));
+        std::cout << "recorded " << endTime << " s of audio + " << videoFile.getFullPathName() << "\n";
+        window.clearContentComponent();
+        return 0;
+    }
+}
+
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI init;
@@ -116,6 +287,9 @@ int main (int argc, char** argv)
 
     plugin->setPlayConfigDetails (0, 2, sr, block);
     plugin->prepareToPlay (sr, block);
+
+    if (argc > 5 && juce::String (argv[3]) == "--demo")
+        return runDemo (*plugin, juce::File (argv[4]), juce::File (argv[2]), argv[5]);
 
     if (argc > 3 && juce::String (argv[3]) == "--ui")
     {

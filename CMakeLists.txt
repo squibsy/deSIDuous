@@ -99,7 +99,7 @@ target_link_libraries(deSIDuous
 option(DESIDUOUS_BUILD_TESTS "Build the RenderTest host" ON)
 if(DESIDUOUS_BUILD_TESTS)
     juce_add_console_app(RenderTest PRODUCT_NAME "RenderTest")
-    target_sources(RenderTest PRIVATE tools/RenderTest/Main.cpp)
+    target_sources(RenderTest PRIVATE tools/RenderTest/Main.cpp tools/RenderTest/WinCapture.cpp)
     target_compile_definitions(RenderTest PRIVATE
         JUCE_PLUGINHOST_VST3=1
         JUCE_MODAL_LOOPS_PERMITTED=1

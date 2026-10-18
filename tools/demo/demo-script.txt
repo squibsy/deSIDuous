@@ -1,0 +1,210 @@
+# deSIDuous demo: an original sequence in A minor at 120 BPM (one beat = 0.5 s).
+# Played by RenderTest --demo, which records the audio and the plugin window.
+#
+#   preset  <time> <program index>
+#   note    <time> <duration> <midi note> [velocity] [channel]
+#   sweep   <start> <end> <parameter name> <from 0-1> <to 0-1>   (normalised; underscores = spaces)
+#   caption <start> <end> <title> | <line> | <line>              (used by make-video.ps1)
+#   end     <time>
+
+# ---------------------------------------------------------------- Monty Pulse Lead
+preset 0.0 10
+caption 0.0 6.0 Monty Pulse Lead | Swept pulse width, legato glide | and delayed vibrato
+note 0.30 0.55 69
+note 0.80 0.30 72
+note 1.05 0.30 76
+note 1.30 0.80 81
+note 2.05 0.30 79
+note 2.30 0.55 76
+note 2.80 0.30 74
+note 3.05 0.30 72
+note 3.30 0.55 74
+note 3.80 1.50 76
+
+# ---------------------------------------------------------------- Sync Scream
+preset 6.0 11
+caption 6.0 11.0 Sync Scream | Voice 1 hard-synced to a | silent voice 3
+note 6.30 1.05 76
+note 7.30 0.55 79
+note 7.80 1.55 81
+note 9.30 0.45 79
+note 9.70 1.00 76
+
+# ---------------------------------------------------------------- Hubbard Pulse Bass
+preset 11.0 1
+caption 11.0 16.0 Hubbard Pulse Bass | Filtered pulse bass in the | style of 1980s game music
+note 11.30 0.20 45
+note 11.55 0.20 45
+note 11.80 0.20 57
+note 12.05 0.20 45
+note 12.30 0.20 43
+note 12.55 0.20 43
+note 12.80 0.20 55
+note 13.05 0.20 43
+note 13.30 0.20 41
+note 13.55 0.20 41
+note 13.80 0.20 53
+note 14.05 0.20 41
+note 14.30 0.20 40
+note 14.55 0.20 40
+note 14.80 0.20 44
+note 15.05 0.40 47
+
+# ---------------------------------------------------------------- 8580 Acid Line (16ths = 0.125 s, overlaps glide)
+preset 16.0 4
+caption 16.0 22.0 8580 Acid Line | Resonant 8580 filter with | the cutoff swept live
+note 16.300 0.10 33
+note 16.550 0.10 45
+note 16.675 0.10 33
+note 16.800 0.20 48
+note 16.925 0.10 45
+note 17.050 0.10 33
+note 17.175 0.10 43
+note 17.300 0.10 33
+note 17.550 0.10 45
+note 17.675 0.10 40
+note 17.800 0.20 43
+note 17.925 0.10 45
+note 18.050 0.10 33
+note 18.175 0.10 48
+note 18.300 0.10 33
+note 18.550 0.10 45
+note 18.675 0.10 33
+note 18.800 0.10 48
+note 19.050 0.20 50
+note 19.175 0.10 48
+note 19.300 0.10 33
+note 19.550 0.10 43
+note 19.675 0.10 45
+note 19.800 0.10 48
+note 20.050 0.20 52
+note 20.175 0.30 45
+sweep 16.30 19.30 Cutoff 0.06 0.48
+sweep 19.30 20.50 Cutoff 0.48 0.12
+
+# ---------------------------------------------------------------- Major Chord 50Hz
+preset 22.0 27
+caption 22.0 27.0 Major Chord 50Hz | One voice per note, chords | faked by a 50 Hz arpeggio
+note 22.30 0.95 60
+note 23.30 0.95 53
+note 24.30 0.95 55
+note 25.30 1.20 60
+
+# ---------------------------------------------------------------- Held Note Arpeggiator
+preset 27.0 30
+caption 27.0 32.0 Held Note Arpeggiator | Cycles through the keys | you hold, bass underneath
+note 27.30 2.00 57
+note 27.30 2.00 60
+note 27.30 2.00 64
+note 29.30 2.20 53
+note 29.30 2.20 57
+note 29.30 2.20 60
+
+# ---------------------------------------------------------------- 8580 String Machine
+preset 32.0 20
+caption 32.0 38.0 8580 String Machine | Three detuned voices per note | and a slow filter envelope
+note 32.30 1.90 57
+note 32.30 1.90 60
+note 32.30 1.90 64
+note 34.30 1.90 53
+note 34.30 1.90 57
+note 34.30 1.90 60
+note 36.30 1.40 55
+note 36.30 1.40 59
+note 36.30 1.40 62
+
+# ---------------------------------------------------------------- Breathing PWM
+preset 38.0 21
+caption 38.0 44.0 Breathing PWM | Three pulse waves with slow, | staggered width sweeps
+note 38.30 2.60 48
+note 38.30 2.60 55
+note 38.30 2.60 59
+note 38.30 2.60 64
+note 41.00 2.40 45
+note 41.00 2.40 52
+note 41.00 2.40 55
+note 41.00 2.40 60
+
+# ---------------------------------------------------------------- Ring Bell
+preset 44.0 36
+caption 44.0 49.0 Ring Bell | Ring modulation by a silent | voice at an odd interval
+note 44.30 0.35 76
+note 44.70 0.35 79
+note 45.10 0.35 81
+note 45.50 0.90 88
+note 46.50 0.35 86
+note 46.90 0.35 83
+note 47.30 1.20 81
+
+# ---------------------------------------------------------------- Drums
+preset 49.0 43
+caption 49.0 51.0 Kick | A noise click, then a fast | pulse pitch drop
+note 49.30 0.10 36 110
+note 49.80 0.10 36 110
+note 50.30 0.10 36 110
+note 50.55 0.10 36 90
+note 50.80 0.10 36 110
+
+preset 51.0 44
+caption 51.0 52.8 Snare | A pulse hit wave into | bright noise
+note 51.30 0.10 38 110
+note 51.80 0.10 38 110
+note 52.05 0.10 38 80
+note 52.30 0.10 38 110
+
+preset 52.8 45
+caption 52.8 54.3 Closed Hi-Hat | High noise through the | high-pass filter
+note 53.000 0.05 42 100
+note 53.125 0.05 42 70
+note 53.250 0.05 42 100
+note 53.375 0.05 42 70
+note 53.500 0.05 42 100
+note 53.625 0.05 42 70
+note 53.750 0.05 42 100
+note 53.875 0.05 42 70
+note 54.000 0.05 42 110
+
+preset 54.3 48
+caption 54.3 56.0 Zap Drum | A tunable, pitch-swept | pulse drum
+note 54.50 0.15 48 110
+note 54.75 0.15 52 100
+note 55.00 0.15 55 110
+note 55.25 0.15 60 110
+
+# ---------------------------------------------------------------- FX
+preset 56.0 50
+caption 56.0 57.5 Laser Zap | Pulse wave with a steep | downward pitch sweep
+note 56.20 0.20 72
+note 56.50 0.20 76
+note 56.80 0.20 79
+
+preset 57.5 52
+caption 57.5 59.0 Power Up | A rising sweep through a | major-chord arpeggio
+note 57.70 1.00 60
+
+preset 59.0 53
+caption 59.0 60.2 Coin Pickup | Fifths arpeggio on a | short square wave
+note 59.20 0.15 72
+note 59.60 0.15 76
+
+preset 60.2 51
+caption 60.2 63.0 Explosion | Filtered noise falling | over two seconds
+note 60.40 0.30 48 120
+
+# ---------------------------------------------------------------- Sync Growl finale
+preset 63.0 2
+caption 63.0 72.5 Sync Growl | Hard-sync bass with a | rising tone sweep
+note 63.30 0.40 45
+note 63.80 0.20 45
+note 64.05 0.40 48
+note 64.55 0.20 45
+note 64.80 0.40 50
+note 65.30 0.20 48
+note 65.55 0.70 45
+note 66.30 0.40 45
+note 66.80 0.20 45
+note 67.05 0.40 43
+note 67.55 0.40 40
+note 68.05 1.30 45
+
+end 72.5
