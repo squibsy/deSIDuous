@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>deSIDuous User Manual</title>
+<base href="file:///C:/dev/SIDSynth/docs/">
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 17mm 20mm 17mm;
+    @bottom-left  { content: "deSIDuous User Manual v1.02"; font: 8.5pt "Segoe UI", sans-serif; color: #6b7280; }
+    @bottom-right { content: counter(page); font: 8.5pt "Segoe UI", sans-serif; color: #6b7280; }
+  }
+  @page :first { @bottom-left { content: none; } @bottom-right { content: none; } }
+
+  :root { --night: #020713; --blue: #1677c0; --cyan: #19eef4; --ink: #1f2430; --muted: #5b6475; --rule: #d8dce4; --tint: #f3f6fa; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font: 10pt/1.5 "Segoe UI", Arial, sans-serif; color: var(--ink); background: #fff; margin: 0; }
+
+  /* cover */
+  .cover { height: 255mm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; break-after: page; }
+  .cover .logo { width: 150mm; margin-bottom: 12mm; }
+  .cover h1 { font-size: 26pt; margin: 0 0 3mm; color: var(--night); border: 0; }
+  .cover .ver { font-size: 12pt; color: var(--muted); margin-bottom: 14mm; }
+  .cover .shot { width: 150mm; border-radius: 2mm; box-shadow: 0 1mm 4mm rgba(0,0,0,.25); }
+  .cover .tag { font-size: 11pt; color: var(--ink); margin: 12mm 20mm 0; }
+  .cover .url { margin-top: 6mm; font-size: 9.5pt; color: var(--blue); }
+
+  h2 { font-size: 16pt; color: var(--night); margin: 9mm 0 3mm; padding-bottom: 1.5mm; border-bottom: 1.2mm solid var(--cyan); break-after: avoid; }
+  h3 { font-size: 12pt; color: var(--blue); margin: 6mm 0 2mm; break-after: avoid; }
+  h2#1-installation { break-before: page; }
+  p, li { orphans: 3; widows: 3; }
+  a { color: var(--blue); text-decoration: none; }
+  ol, ul { padding-left: 6mm; }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 6mm 0; }
+
+  img { max-width: 100% !important; break-inside: avoid; }
+  p:has(> img), p:has(> a > img) { text-align: center; break-inside: avoid; margin: 3mm 0 4mm; }
+  p > img, p > a > img { border-radius: 1.2mm; box-shadow: 0 .4mm 2mm rgba(0,0,0,.18); }
+
+  table { border-collapse: collapse; width: 100%; margin: 3mm 0 4mm; font-size: 9pt; break-inside: auto; }
+  tr { break-inside: avoid; }
+  thead:has(th:empty) { display: none; }
+  th { background: var(--night); color: #fff; text-align: left; font-weight: 600; }
+  th, td { padding: 1.4mm 2mm; border: 1px solid var(--rule); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: var(--tint); }
+  td img { box-shadow: none !important; margin-top: 1.5mm; }
+  img[src*="voice-"], img[src*="filter-"], img[src*="mod-"], img[src*="chip-output"] { width: 100mm; }
+
+  code { font: 8.8pt Consolas, monospace; background: var(--tint); padding: .2mm 1mm; border-radius: .8mm; }
+  pre { background: var(--night); color: #e6f6ff; padding: 3mm 4mm; border-radius: 1.5mm; overflow-wrap: anywhere; white-space: pre-wrap; break-inside: avoid; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .highlight pre span { color: inherit !important; }
+  strong { color: var(--night); }
+</style>
+</head>
+<body>
+<section class="cover">
+  <img class="logo" src="../Resources/logo.png" alt="deSIDuous">
+  <h1>User Manual</h1>
+  <div class="ver">Version 1.02 &middot; October 2026</div>
+  <img class="shot" src="images/ui-overview.png" alt="">
+  <div class="tag">A VST3 instrument built on a cycle-exact emulation of the MOS 6581 and 8580 SID chips from the Commodore 64.</div>
+  <div class="url">github.com/squibsy/deSIDuous</div>
+</section>
+<main>

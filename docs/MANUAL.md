@@ -2,7 +2,7 @@
 
 # deSIDuous User Manual
 
-Version 1.02
+Version 1.02 · [Download as PDF](deSIDuous-Manual.pdf)
 
 deSIDuous is a software instrument that recreates the sound chip of the Commodore 64: the MOS 6581 and its later revision, the 8580, known as the **SID** (Sound Interface Device). Instead of imitating the SID's sound with ordinary synth building blocks, deSIDuous runs a cycle-exact emulation of the chip (reSIDfp) and plays it by writing the chip's real registers, the same way a C64 music program does.
 

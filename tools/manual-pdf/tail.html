@@ -1,0 +1,9 @@
+</main>
+<script>
+  // GitHub-style heading ids so the manual's internal links work in the PDF
+  for (const h of document.querySelectorAll('main h2, main h3')) {
+    h.id = h.textContent.trim().toLowerCase().replace(/[^\w\- ]+/g, '').replace(/ /g, '-');
+  }
+</script>
+</body>
+</html>
