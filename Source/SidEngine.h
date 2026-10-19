@@ -206,6 +206,7 @@ private:
     void releaseVoice (VoiceRT& v);
     void releaseChip (ChipRT& c);
     void wakeChip (ChipRT& c, float vel, const EngineSettings& s);
+    static bool chipSilent (const ChipRT& c, const EngineSettings& s);
     void writeFilterRegs (ChipRT& c, const EngineSettings& s);
     static float noteGain (float vel, const EngineSettings& s);
 

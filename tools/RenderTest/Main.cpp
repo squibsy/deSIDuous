@@ -3,6 +3,7 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <cstdio>
+#include <thread>
 #include "WinCapture.h"
 
 #ifndef _WIN32
@@ -263,6 +264,145 @@ namespace
     }
 }
 
+namespace
+{
+    // ---- Multi-instance test: several plugin instances playing a drum pattern, run once
+    // in parallel threads (as a DAW's multi-core mixer does) and once serially. Reports
+    // how far the two differ and whether hit timing or pitch drifts over time.
+    struct Hit { double t, dur; int note; };
+
+    struct Track
+    {
+        juce::String label;
+        int program;
+        std::vector<Hit> hits;
+        std::unique_ptr<juce::AudioPluginInstance> plugin;
+        juce::AudioBuffer<float> out;
+    };
+
+    void renderTrack (Track& tr, int total)
+    {
+        juce::AudioBuffer<float> buf (2, block);
+        juce::MidiBuffer midi;
+        tr.out.setSize (2, total);
+        tr.out.clear();
+        for (int pos = 0; pos < total; pos += block)
+        {
+            const double t0 = pos / sr, t1 = (pos + block) / sr;
+            midi.clear();
+            for (auto& h : tr.hits)
+            {
+                if (h.t >= t0 && h.t < t1)              midi.addEvent (juce::MidiMessage::noteOn (1, h.note, (juce::uint8) 100), (int) ((h.t - t0) * sr));
+                if (h.t + h.dur >= t0 && h.t + h.dur < t1) midi.addEvent (juce::MidiMessage::noteOff (1, h.note), (int) ((h.t + h.dur - t0) * sr));
+            }
+            buf.clear();
+            tr.plugin->processBlock (buf, midi);
+            const int n = juce::jmin (block, total - pos);
+            for (int c = 0; c < 2; ++c)
+                tr.out.copyFrom (c, pos, buf, c, 0, n);
+        }
+    }
+
+    // Per hit: onset delay after the note-on, and the pitch from zero crossings 30-90 ms in
+    void analyseHits (const Track& tr, int total)
+    {
+        const float* d = tr.out.getReadPointer (0);
+        double minDelay = 1e9, maxDelay = -1e9, minHz = 1e9, maxHz = -1e9;
+        std::vector<double> hzList;
+        for (auto& h : tr.hits)
+        {
+            const int start = (int) (h.t * sr);
+            int onset = -1;
+            for (int i = start; i < juce::jmin (total, start + (int) (0.05 * sr)); ++i)
+                if (std::abs (d[i]) > 0.01f) { onset = i; break; }
+            if (onset < 0) continue;
+            const double delayMs = (onset - start) * 1000.0 / sr;
+            const int a = onset + (int) (0.03 * sr), b = onset + (int) (0.09 * sr);
+            int crossings = 0;
+            for (int i = a + 1; i < juce::jmin (total, b); ++i)
+                if ((d[i - 1] <= 0.0f) != (d[i] <= 0.0f)) ++crossings;
+            const double hz = crossings * 0.5 / 0.06;
+            minDelay = juce::jmin (minDelay, delayMs); maxDelay = juce::jmax (maxDelay, delayMs);
+            minHz = juce::jmin (minHz, hz); maxHz = juce::jmax (maxHz, hz);
+            hzList.push_back (hz);
+        }
+        const int n = (int) hzList.size();
+        auto avg = [&] (int from, int to) { double s = 0; for (int i = from; i < to; ++i) s += hzList[(size_t) i]; return s / juce::jmax (1, to - from); };
+        std::printf ("  %-14s hits %3d  onset delay %.2f..%.2f ms  pitch first 8 hits %.1f Hz, last 8 hits %.1f Hz (range %.1f..%.1f)\n",
+                     tr.label.toRawUTF8(), n, minDelay, maxDelay, avg (0, juce::jmin (8, n)), avg (juce::jmax (0, n - 8), n), minHz, maxHz);
+    }
+
+    int runMulti (juce::AudioPluginFormatManager& fm, const juce::PluginDescription& desc, const juce::File& outDir, double seconds)
+    {
+        const int total = (int) (seconds * sr);
+        std::vector<Track> tracks (4);
+        tracks[0] = { "Kick", 43, {} };
+        tracks[1] = { "Open hat", 46, {} };
+        tracks[2] = { "Closed hat", 45, {} };
+        tracks[3] = { "Synth bass", 128 + 38, {} };   // GM 039 Synth Bass 1
+
+        const int bassLine[8] = { 33, 33, 45, 33, 31, 31, 43, 31 };
+        for (double t = 0.0; t < seconds - 1.0; t += 0.125)        // 16th notes at 120 BPM
+        {
+            const int step = (int) std::lround (t / 0.125);
+            if (step % 4 == 0) tracks[0].hits.push_back ({ t, 0.1, 36 });
+            if (step % 4 == 2) tracks[1].hits.push_back ({ t, 0.1, 46 });
+            else               tracks[2].hits.push_back ({ t, 0.05, 42 });
+            if (step % 2 == 0) tracks[3].hits.push_back ({ t, 0.2, bassLine[(step / 2) % 8] });
+        }
+
+        auto setup = [&] {
+            for (auto& tr : tracks)
+            {
+                juce::String err;
+                tr.plugin = fm.createPluginInstance (desc, sr, block, err);
+                if (tr.plugin == nullptr) { std::cout << "load failed: " << err << "\n"; return false; }
+                tr.plugin->setPlayConfigDetails (0, 2, sr, block);
+                tr.plugin->prepareToPlay (sr, block);
+                tr.plugin->setCurrentProgram (tr.program);
+            }
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (100);
+            return true;
+        };
+
+        // ---- parallel: one thread per instance ----
+        if (! setup()) return 1;
+        const auto t0 = juce::Time::getHighResolutionTicks();
+        {
+            std::vector<std::thread> threads;
+            for (auto& tr : tracks)
+                threads.emplace_back ([&tr, total] { renderTrack (tr, total); });
+            for (auto& th : threads) th.join();
+        }
+        const double parSecs = juce::Time::highResolutionTicksToSeconds (juce::Time::getHighResolutionTicks() - t0);
+        std::vector<juce::AudioBuffer<float>> parallelOut;
+        for (auto& tr : tracks) { parallelOut.push_back (tr.out); writeWav (tr.out, total, outDir.getChildFile ("multi_parallel_" + tr.label.replace (" ", "_") + ".wav")); }
+
+        std::printf ("Parallel run: %.0f s of audio in %.1f s\n", seconds, parSecs);
+        for (auto& tr : tracks) analyseHits (tr, total);
+
+        // ---- serial: same instances recreated, one at a time ----
+        for (auto& tr : tracks) tr.plugin.reset();
+        if (! setup()) return 1;
+        for (auto& tr : tracks) renderTrack (tr, total);
+        std::printf ("Serial run:\n");
+        for (auto& tr : tracks) analyseHits (tr, total);
+
+        std::printf ("Parallel vs serial difference:\n");
+        for (size_t i = 0; i < tracks.size(); ++i)
+        {
+            const float* a = parallelOut[i].getReadPointer (0);
+            const float* b = tracks[i].out.getReadPointer (0);
+            double diff = 0.0, sig = 0.0; float peakDiff = 0.0f;
+            for (int k = 0; k < total; ++k) { const double e = a[k] - b[k]; diff += e * e; sig += (double) b[k] * b[k]; peakDiff = juce::jmax (peakDiff, (float) std::abs (e)); }
+            std::printf ("  %-14s difference %.1f dB below the signal, peak difference %.1f dBFS\n", tracks[i].label.toRawUTF8(),
+                         10.0 * std::log10 (sig / juce::jmax (1e-20, diff)), toDb (peakDiff));
+        }
+        for (auto& tr : tracks) tr.plugin.reset();
+        return 0;
+    }
+}
+
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI init;
@@ -287,6 +427,12 @@ int main (int argc, char** argv)
 
     plugin->setPlayConfigDetails (0, 2, sr, block);
     plugin->prepareToPlay (sr, block);
+
+    if (argc > 3 && juce::String (argv[3]) == "--multi")
+    {
+        plugin.reset();
+        return runMulti (fm, *descs[0], juce::File (argv[2]), argc > 4 ? juce::String (argv[4]).getDoubleValue() : 60.0);
+    }
 
     if (argc > 5 && juce::String (argv[3]) == "--demo")
         return runDemo (*plugin, juce::File (argv[4]), juce::File (argv[2]), argv[5]);

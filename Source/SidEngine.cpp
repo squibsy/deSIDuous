@@ -622,18 +622,37 @@ void SidEngine::writeFilterRegs (ChipRT& c, const EngineSettings& s)
     chip.write (regModeVol, modeVol);
 }
 
+bool SidEngine::chipSilent (const ChipRT& c, const EngineSettings& s)
+{
+    for (int vi = 0; vi < 3; ++vi)
+    {
+        const auto& v = c.v[vi];
+        if (v.keyDown || v.startPending || v.gatedInChip)
+            return false;
+        if (v.hasPlayed && v.tOff * 1000.0 < Params::decayMs[s.voice[vi].r] + 5.0)
+            return false;
+    }
+    return true;
+}
+
 void SidEngine::wakeChip (ChipRT& c, float vel, const EngineSettings& s)
 {
     c.gainTarget = noteGain (vel, s);
-    if (c.active)
+
+    // A chip whose voices have all finished can be reset before the new note. That clears
+    // the envelope rate counters, which avoids the SID "ADSR delay bug" (an attack that
+    // stalls for up to 32768 cycles, ~33 ms, depending on where the counter happens to be)
+    // and restarts the noise generator, so repeated drum hits start on time and alike.
+    if (c.active && ! chipSilent (c, s))
         return;
 
-    // An idle chip is not clocked, so register writes made since it went quiet would all
-    // land at once on the next note and step its DC level (a click). Bring the patch's
+    // An idle chip is not clocked either, so register writes made since it went quiet would
+    // all land at once on the next note and step its DC level (a click). Bring the patch's
     // filter and volume state in first, run the chip silently for 2 ms, and start its
     // DC blocker from wherever the output settled.
     c.active = true;
     c.idleTime = 0.0;
+    c.chip->reset();
     writeFilterRegs (c, s);
     c.chip->preroll (std::max (1, juce::roundToInt (sampleRate * 0.002)));
     c.freshStart = true;
