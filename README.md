@@ -18,7 +18,7 @@ Get the latest version from the **[Releases page](https://github.com/squibsy/deS
 
 Then rescan plugins in your DAW. deSIDuous appears as an instrument from "Bananalytics".
 
-📖 **[Read the user manual](docs/MANUAL.md)** ([PDF](docs/deSIDuous-Manual.pdf)) for a guide to every control, sound design recipes and the preset list.
+📖 **[Read the user manual](docs/MANUAL.md)** ([PDF](docs/deSIDuous-Manual.pdf)) for a guide to every control, sound design recipes and the preset list. What changed in each version, with the gory chip details: **[CHANGELOG](CHANGELOG.md)**.
 
 **macOS:** the plugin isn't notarised by Apple, so macOS may block it the first time. After copying it, run this once in Terminal (adjust the path if you used `~/Library`):
 
