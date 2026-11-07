@@ -184,11 +184,22 @@ On the C64, chords were usually faked by cycling one voice through the chord not
 
 | Control | What it does |
 |---|---|
-| **ARP MODE** | **Off**. **Chord**: every note you play cycles through the chosen chord shape. **Held Notes**: cycles through the keys you're holding (Layered Poly mode only; all notes go to one chip). |
+| **ARP MODE** | **Off**. **Chord**: every note you play cycles through the chosen chord shape. **Held Notes**: cycles through the keys you're holding (Layered Poly mode only; all notes go to one chip). **Langton**: a generative pattern from Langton's ant (see below). |
 | **CHORD** | The chord shape: Octave, Major, Minor, Major 7, Minor 7, Dom 7, Sus 4, Power, Diminished, Two Octaves, Minor Add9 or Fifths. |
+| **ANT RULE** | The rule for **Langton** mode: RL (the classic ant), RLR, LLRR, LRRRRRLLR or RRLLLRLLLRRR. |
 | **ARP SPD** | Step length in video frames, like a C64 tracker. 1 frame is 50 steps per second on PAL (60 on NTSC); 2 frames is half that, and so on up to 16. |
 
 Only voices with **ARP** on follow the arpeggio. In Held Notes mode, voices with **ARP** off play the lowest held note instead, which is handy for a bass under the arpeggio.
+
+#### Langton mode
+
+Langton's ant is a simple rule that makes surprisingly musical patterns. An ant walks a small grid, one cell per arp step. On a cell whose rule letter is **R** it turns right and the note plays; on **L** it turns left and the note rests. Every cell it leaves changes colour, so the ant keeps rewriting its own path, and the rhythm comes out of that.
+
+The pitch follows the ant's diagonal position on the grid, mapped onto two octaves of the chosen **CHORD**. The ant moves one cell per step, so the line moves one chord note at a time, up or down. A Minor 7 chord gives a moody walking line, Fifths or Power give something closer to a bass riff.
+
+Each note starts the ant again on a blank grid, so the same note always plays the same pattern, and a held note keeps evolving for as long as you hold it. The classic RL ant draws symmetric shapes for its first few hundred steps and then turns chaotic. The other rules grow more regular patterns: LLRR stays symmetric, LRRRRRLLR builds a square.
+
+Langton works best with slower steps: an **ARP SPD** of 6 to 8 frames is roughly 16th notes at 100 to 125 BPM. Short, plucky envelopes make the rests easier to hear. Voices with **ARP** off keep holding the base note, which makes a drone under the pattern.
 
 ### Glide
 
@@ -277,6 +288,10 @@ Snares and hi-hats work the same way with **NOI** as the main waveform. Higher n
 ### Classic C64 chord
 
 Set **ARP MODE** to **Chord**, pick a **CHORD**, set **ARP SPD** to 1 frame, and play single notes. Each note becomes a shimmering chord, the way C64 composers squeezed chords out of one voice.
+
+### Langton's ant riff
+
+Set **ARP MODE** to **Langton**, **ANT RULE** to **RL**, **CHORD** to **Minor 7** and **ARP SPD** to 7 frames. Use a pulse or sawtooth voice with a short decay and low sustain, then hold one note. The ant plays a riff that wanders and never quite repeats. Play a different note and the same pattern starts again, transposed.
 
 ### Breathing pad
 
@@ -425,7 +440,8 @@ All settings can be automated from your DAW. Ranges are given in the units shown
 | | LFO Shape | Triangle, Sine, Square, Saw Down, Random |
 | | Vibrato Depth / Vibrato Delay | 0 to 1200 cents / 0 to 3 s |
 | | LFO > Cutoff / LFO > Pulse Width | 0 to 1024 / 0 to 2047 |
-| | Arp Mode | Off, Chord, Held Notes |
+| | Arp Mode | Off, Chord, Held Notes, Langton |
+| | Arp Ant Rule | RL, RLR, LLRR, LRRRRRLLR, RRLLLRLLLRRR |
 | | Arp Chord | 12 chord shapes |
 | | Arp Speed | 1 to 16 frames |
 

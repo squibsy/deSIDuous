@@ -40,6 +40,7 @@ DesiduousProcessor::DesiduousProcessor()
     lfoRate = get (Params::lfoRate);       lfoShape = get (Params::lfoShape);   lfoVib = get (Params::lfoVib);
     lfoDelay = get (Params::lfoDelay);     lfoCutoff = get (Params::lfoCutoff); lfoPW = get (Params::lfoPW);
     arpMode = get (Params::arpMode);       arpChord = get (Params::arpChord);   arpSpeed = get (Params::arpSpeed);
+    arpRule = get (Params::arpRule);
 
     state.addParameterListener (Params::clock, this);
     state.addParameterListener (Params::quality, this);
@@ -89,7 +90,7 @@ EngineSettings DesiduousProcessor::snapshot() const
     s.fReleaseMs = f (fRelease); s.fKeyTrack = f (fKeyTrack); s.fVelocity = i (fVelocity);
     s.lfoRate = f (lfoRate); s.lfoShape = i (lfoShape); s.lfoVibCents = f (lfoVib); s.lfoDelayMs = f (lfoDelay);
     s.lfoCutoff = i (lfoCutoff); s.lfoPW = i (lfoPW);
-    s.arpMode = i (arpMode); s.arpChord = i (arpChord); s.arpSpeed = i (arpSpeed);
+    s.arpMode = i (arpMode); s.arpChord = i (arpChord); s.arpSpeed = i (arpSpeed); s.arpRule = i (arpRule);
     return s;
 }
 

@@ -151,11 +151,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
         juce::StringArray chordNames;
         for (auto& c : chords) chordNames.add (c.name);
-        g->addChild (std::make_unique<APC> (pid (arpMode), "Arp Mode", juce::StringArray { "Off", "Chord", "Held Notes" }, 0));
+        g->addChild (std::make_unique<APC> (pid (arpMode), "Arp Mode", juce::StringArray { "Off", "Chord", "Held Notes", "Langton" }, 0));
         g->addChild (std::make_unique<APC> (pid (arpChord), "Arp Chord", chordNames, 1));
         g->addChild (std::make_unique<API> (pid (arpSpeed), "Arp Speed", 1, 16, 1,
                                             juce::AudioParameterIntAttributes().withStringFromValueFunction (
                                                 [] (int x, int) { return juce::String (x) + (x == 1 ? " frame" : " frames"); })));
+        juce::StringArray ruleNames;
+        for (auto* r : antRules) ruleNames.add (r);
+        g->addChild (std::make_unique<APC> (pid (arpRule), "Arp Ant Rule", ruleNames, 0));
         layout.add (std::move (g));
     }
 

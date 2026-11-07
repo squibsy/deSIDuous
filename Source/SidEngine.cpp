@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace
 {
@@ -473,8 +474,7 @@ void SidEngine::noteOn (int channel, int note, float vel, const EngineSettings& 
         c.lastNote = note;
         wakeChip (c, vel, s);
         c.fenv.trigger();
-        c.arpStep = 0;
-        c.arpTimer = 0.0;
+        restartArp (c, s);
         triggerVoice (c, best, note, vel, true, s);
         c.v[best].order = ++orderCounter;
         monitorChip.store (0);
@@ -501,8 +501,7 @@ void SidEngine::noteOn (int channel, int note, float vel, const EngineSettings& 
         if (! (wasHeld && s.legato))
         {
             c.fenv.trigger();
-            c.arpStep = 0;
-            c.arpTimer = 0.0;
+            restartArp (c, s);
         }
         triggerVoice (c, vi, note, vel, ! (wasHeld && s.legato), s);
         monitorChip.store (0);
@@ -675,8 +674,7 @@ void SidEngine::triggerChip (int ci, int note, float vel, bool retrigger, const 
     if (retrigger)
     {
         c.fenv.trigger();
-        c.arpStep = 0;
-        c.arpTimer = 0.0;
+        restartArp (c, s);
     }
 
     for (int vi = 0; vi < 3; ++vi)
@@ -719,6 +717,90 @@ void SidEngine::triggerVoice (ChipRT& c, int vi, int note, float vel, bool retri
         v.startPending = true;
     }
     juce::ignoreUnused (c);
+}
+
+//==============================================================================
+// Langton arp. An ant walks a small wrapped grid, one cell per arp step. On a cell
+// whose rule letter is R it turns right and the arp voices play a note; on L it turns
+// left and they rest. The pitch is the ant's diagonal position (x - y), which changes
+// by one cell per step, folded into two octaves of the chosen chord's notes, so the
+// lines move stepwise. Each note starts the ant afresh on a blank grid, so the same
+// note always plays the same pattern.
+void SidEngine::restartArp (ChipRT& c, const EngineSettings& s)
+{
+    c.arpStep = 0;
+    c.arpTimer = 0.0;
+    c.antGrid.fill (0);
+    c.antX = c.antY = ChipRT::antSize / 2;
+    c.antUx = c.antUy = 0;
+    c.antDir = 0;
+    c.antOffset = 0;
+    for (auto& v : c.v)
+        v.antRest = false;
+
+    // The note itself is the ant's first step: a blank cell, so R for every rule that
+    // starts with R. Rules starting with L begin on a rest-turn but still sound the note.
+    const char* rule = Params::antRules[juce::jlimit (0, Params::numAntRules - 1, s.arpRule)];
+    const int len = (int) std::strlen (rule);
+    c.antDir = (c.antDir + (rule[0] == 'R' ? 1 : 3)) & 3;
+    c.antGrid[(size_t) (c.antY * ChipRT::antSize + c.antX)] = (uint8_t) (1 % len);
+    static constexpr int dx[4] = { 0, 1, 0, -1 }, dy[4] = { -1, 0, 1, 0 };
+    c.antX = (c.antX + dx[c.antDir] + ChipRT::antSize) % ChipRT::antSize;
+    c.antY = (c.antY + dy[c.antDir] + ChipRT::antSize) % ChipRT::antSize;
+    c.antUx += dx[c.antDir];
+    c.antUy += dy[c.antDir];
+}
+
+void SidEngine::stepAnt (ChipRT& c, const EngineSettings& s)
+{
+    static constexpr int dx[4] = { 0, 1, 0, -1 }, dy[4] = { -1, 0, 1, 0 };
+    constexpr int n = ChipRT::antSize;
+
+    const char* rule = Params::antRules[juce::jlimit (0, Params::numAntRules - 1, s.arpRule)];
+    const int len = (int) std::strlen (rule);
+    auto& cell = c.antGrid[(size_t) (c.antY * n + c.antX)];
+    const int colour = cell % len;            // the rule may have changed mid-note
+    const bool right = rule[colour] == 'R';
+
+    // pitch from where the ant stands before it moves
+    const auto& chord = Params::chords[juce::jlimit (0, Params::numChords - 1, s.arpChord)];
+    const int k = chord.count, range = 2 * k + 1, period = 2 * (range - 1);
+    int d = ((c.antUx - c.antUy) % period + period) % period;
+    if (d >= range) d = period - d;
+    const int offset = 12 * (d / k) + chord.notes[d % k];
+
+    c.antDir = (c.antDir + (right ? 1 : 3)) & 3;
+    cell = (uint8_t) ((colour + 1) % len);
+    c.antX = (c.antX + dx[c.antDir] + n) % n;
+    c.antY = (c.antY + dy[c.antDir] + n) % n;
+    c.antUx += dx[c.antDir];
+    c.antUy += dy[c.antDir];
+
+    const int hrTicks = (int) std::ceil (s.hardRestartMs);
+    for (int vi = 0; vi < 3; ++vi)
+    {
+        auto& v = c.v[vi];
+        if (! s.voice[vi].on || ! s.voice[vi].arp || ! v.keyDown || v.startPending)
+            continue;
+
+        if (right)
+        {
+            // Retrigger through the normal gate sequencer: one tick with the gate off
+            // (plus any hard restart) so the envelope restarts its attack.
+            v.antRest = false;
+            v.resetOsc = false;
+            v.pendingTicks = (v.gatedInChip ? 1 : 0) + hrTicks;
+            if (v.pendingTicks > 0)
+                ++v.pendingTicks;              // consumed by this tick's countdown
+            v.startPending = true;
+        }
+        else
+        {
+            v.antRest = true;
+        }
+    }
+    if (right)
+        c.antOffset = offset;
 }
 
 void SidEngine::releaseVoice (VoiceRT& v)
@@ -804,11 +886,14 @@ void SidEngine::updateChip (ChipRT& c, double dt, const EngineSettings& s, bool 
         {
             c.arpTimer -= step;
             ++c.arpStep;
+            if (s.arpMode == (int) Params::ArpMode::Langton)
+                stepAnt (c, s);
         }
     }
 
     const auto& chord = Params::chords[juce::jlimit (0, Params::numChords - 1, s.arpChord)];
     const bool chordArp = s.arpMode == (int) Params::ArpMode::Chord;
+    const bool antArp = s.arpMode == (int) Params::ArpMode::Langton;
 
     bool anyHeld = false;
     float maxReleaseMs = 0.0f;
@@ -848,7 +933,7 @@ void SidEngine::updateChip (ChipRT& c, double dt, const EngineSettings& s, bool 
         }
         else
         {
-            gate = v.keyDown;
+            gate = v.keyDown && ! (antArp && p.arp && v.antRest);
         }
 
         if (gate && ! v.gatedInChip)
@@ -878,6 +963,8 @@ void SidEngine::updateChip (ChipRT& c, double dt, const EngineSettings& s, bool 
 
         if (chordArp && p.arp)
             semis += chord.notes[c.arpStep % chord.count];
+        else if (antArp && p.arp)
+            semis += c.antOffset;
 
         if (p.sweep != 0.0f)
         {

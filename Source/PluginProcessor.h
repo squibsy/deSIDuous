@@ -50,7 +50,7 @@ private:
                        *glide, *legato, *bendRange, *hardRestart, *phaseReset, *quality,
                        *cutoff, *resonance, *lp, *bp, *hp, *v3off, *fEnvAmount, *fAttack, *fDecay, *fSustain, *fRelease,
                        *fKeyTrack, *fVelocity, *lfoRate, *lfoShape, *lfoVib, *lfoDelay, *lfoCutoff, *lfoPW,
-                       *arpMode, *arpChord, *arpSpeed;
+                       *arpMode, *arpChord, *arpSpeed, *arpRule;
 
     EngineSettings snapshot() const;
     void parameterChanged (const juce::String& id, float) override;

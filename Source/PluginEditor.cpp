@@ -224,8 +224,9 @@ void FilterPanel::resized()
 ModPanel::ModPanel (APVTS& st)
     : Panel ("LFO / ARP / GLIDE", C64::lightBlue.brighter (0.4f)),
       shape (st, Params::lfoShape, "LFO SHAPE"),
-      arpMode (st, Params::arpMode, "ARP MODE", "Chord: each note cycles a chord shape. Held Notes: cycles through the keys you hold."),
+      arpMode (st, Params::arpMode, "ARP MODE", "Chord: each note cycles a chord shape. Held Notes: cycles through the keys you hold. Langton: an ant walking a grid plays the chord's notes, turning right to play and left to rest."),
       arpChord (st, Params::arpChord, "CHORD"),
+      arpRule (st, Params::arpRule, "ANT RULE", "Langton arp rule: one letter per cell colour. R plays a note, L rests. RL is the classic Langton's ant."),
       rate (st, Params::lfoRate, "LFO HZ"),
       vib (st, Params::lfoVib, "VIBRATO", "LFO to pitch in cents (mod wheel adds up to 100 cents)"),
       delay (st, Params::lfoDelay, "VIB DLY", "Vibrato fade-in delay"),
@@ -236,7 +237,7 @@ ModPanel::ModPanel (APVTS& st)
       bend (st, Params::bendRange, "BEND"),
       legato (st, Params::legato, "LEGATO", "Mono legato: overlapping notes glide without retriggering the envelope")
 {
-    for (juce::Component* c : std::initializer_list<juce::Component*> { &shape, &arpMode, &arpChord, &rate, &vib, &delay, &toCut, &toPw, &arpSpeed, &glide, &bend, &legato })
+    for (juce::Component* c : std::initializer_list<juce::Component*> { &shape, &arpMode, &arpChord, &arpRule, &rate, &vib, &delay, &toCut, &toPw, &arpSpeed, &glide, &bend, &legato })
         addAndMakeVisible (c);
 }
 
@@ -244,8 +245,8 @@ void ModPanel::resized()
 {
     auto area = content();
     auto top = area.removeFromTop (38);
-    gridLayout<juce::Component> (top, 3, 1, { &shape, &arpMode, &arpChord });
-    for (auto* c : { &shape, &arpMode, &arpChord })
+    gridLayout<juce::Component> (top, 4, 1, { &shape, &arpMode, &arpChord, &arpRule });
+    for (auto* c : { &shape, &arpMode, &arpChord, &arpRule })
         c->setBounds (c->getBounds().reduced (3, 0));
     area.removeFromTop (6);
     auto legatoRow = area.removeFromBottom (24);

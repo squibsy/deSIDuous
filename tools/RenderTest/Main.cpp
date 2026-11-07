@@ -543,6 +543,33 @@ int main (int argc, char** argv)
         }
     }
 
+    // ---- Langton arp on the init patch: a held note walks the ant ----
+    plugin->setCurrentProgram (0);
+    juce::MessageManager::getInstance()->runDispatchLoopUntil (50);
+    if (auto* am = findParam (*plugin, "Arp Mode"))
+    {
+        std::cout << "\nLangton arp (Init Saw, Minor 7, 7 frames):\n";
+        am->setValueNotifyingHost (1.0f);   // Langton is the last choice
+        if (auto* ch = findParam (*plugin, "Arp Chord")) ch->setValueNotifyingHost (4.0f / 11.0f);
+        if (auto* sp = findParam (*plugin, "Arp Speed")) sp->setValueNotifyingHost (6.0f / 15.0f);
+        // plucky envelope so the ant's rests are audible
+        for (auto [name, value] : { std::pair { "V1 Decay", 6 }, { "V1 Sustain", 3 }, { "V1 Release", 3 } })
+            if (auto* p = findParam (*plugin, name)) p->setValueNotifyingHost ((float) value / 15.0f);
+        // the voice mode checks above leave voices 2 and 3 switched on
+        for (auto* name : { "V2 On", "V3 On" })
+            if (auto* p = findParam (*plugin, name)) p->setValueNotifyingHost (0.0f);
+        auto s = render (*plugin, { { 1, 57 } }, 6.0, 7.0, outDir.getChildFile ("arp_langton_rl.wav"));
+        std::printf ("  RL held 6 s           rms %.1f dB  peak %.1f dB\n", s.rmsDb, s.peakDb);
+        if (auto* r = findParam (*plugin, "Arp Ant Rule"))
+        {
+            r->setValueNotifyingHost (3.0f / 4.0f);
+            s = render (*plugin, { { 1, 57 } }, 6.0, 7.0, outDir.getChildFile ("arp_langton_square.wav"));
+            std::printf ("  LRRRRRLLR held 6 s    rms %.1f dB  peak %.1f dB\n", s.rmsDb, s.peakDb);
+            r->setValueNotifyingHost (0.0f);
+        }
+        am->setValueNotifyingHost (0.0f);
+    }
+
     // ---- state round trip ----
     {
         plugin->setCurrentProgram (5);

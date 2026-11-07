@@ -90,7 +90,7 @@ public:
     explicit ModPanel (APVTS& s);
     void resized() override;
 private:
-    Choice shape, arpMode, arpChord;
+    Choice shape, arpMode, arpChord, arpRule;
     Knob rate, vib, delay, toCut, toPw, arpSpeed, glide, bend;
     Toggle legato;
 };

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### New: Langton arp mode
+
+**ARP MODE** has a fourth setting, **Langton**, a generative arpeggio based on Langton's ant. An ant walks a 32 x 32 grid that wraps at the edges, taking one cell per arp step. When its rule says turn right, the note plays; when it says turn left, the note rests. Each cell it leaves changes colour, so the rhythm comes from the pattern the ant draws.
+
+The pitch follows the ant's diagonal position, mapped onto two octaves of the selected **CHORD**, so the line moves one chord note at a time. A new **ANT RULE** control picks the rule: RL (the classic ant) or one of four multi-colour variants (RLR, LLRR, LRRRRRLLR, RRLLLRLLLRRR).
+
+Every note restarts the ant on a blank grid, so a given note always plays the same pattern. Retriggers go through the normal gate sequencer, so **HARD RST** applies to them as well. Only voices with **ARP** on follow the ant; the others hold the note.
+
 ## 1.04
 
 ### Fixed: drum hits drifting in time and changing tone (the SID "ADSR delay bug")

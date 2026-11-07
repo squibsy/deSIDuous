@@ -62,7 +62,7 @@ struct EngineSettings
     float lfoVibCents = 0.0f, lfoDelayMs = 0.0f;
     int lfoCutoff = 0, lfoPW = 0;
 
-    int arpMode = 0, arpChord = 1, arpSpeed = 1;
+    int arpMode = 0, arpChord = 1, arpSpeed = 1, arpRule = 0;
 
     double clockHz() const { return clock == 0 ? 985248.0 : 1022730.0; }
     double frameHz() const { return clock == 0 ? 50.0 : 60.0; }
@@ -149,6 +149,7 @@ private:
         uint64_t order = 0;
         int stack[16] {}; int stackSize = 0;   // MIDI-channel mode note stack
         bool resetOsc = false;                  // pulse the test bit before this note
+        bool antRest = false;                   // Langton arp: ant turned left, gate held off
     };
 
     struct FilterEnv
@@ -172,6 +173,12 @@ private:
         double idleTime = 0.0;
         int arpStep = 0;
         double arpTimer = 0.0;
+
+        // Langton arp: one ant per chip on a small wrapped grid, restarted on every note
+        static constexpr int antSize = 32;
+        std::array<uint8_t, antSize * antSize> antGrid {};
+        int antX = 0, antY = 0, antUx = 0, antUy = 0, antDir = 0;
+        int antOffset = 0;                         // semitones added to arp voices
         float gainNow = 1.0f, gainTarget = 1.0f;   // velocity, applied digitally
         float dcIn = 0.0f, dcOut = 0.0f;           // per-chip DC blocker
         bool freshStart = false;
@@ -209,6 +216,9 @@ private:
     static bool chipSilent (const ChipRT& c, const EngineSettings& s);
     void writeFilterRegs (ChipRT& c, const EngineSettings& s);
     static float noteGain (float vel, const EngineSettings& s);
+
+    void restartArp (ChipRT& c, const EngineSettings& s);
+    void stepAnt (ChipRT& c, const EngineSettings& s);
 
     void tick (double dt, const EngineSettings& s);
     void updateChip (ChipRT& c, double dt, const EngineSettings& s, bool advance);
