@@ -6,29 +6,22 @@ A VST3 instrument built on a cycle-exact emulation of the MOS 6581 and 8580 SID 
 
 The plugin writes real SID registers ($D400 to $D418) at a 1 kHz control rate. Everything you hear (oscillators, combined waveforms, ring mod, hard sync, the ADSR envelopes including their quirks, and the 6581/8580 filters) comes from the emulated chip itself.
 
-## Get the plugin
+## Get the plugin and the sample pack
 
 deSIDuous is free software: this repository holds the complete source code, and you are welcome to build it yourself (see [Building](#building-windows)), change it and share it under the AGPLv3.
 
-The ready-to-install Windows VST3, together with the deSIDuous sample pack made with it, is sold at **[bananalytics.gumroad.com/l/deSIDuous](https://bananalytics.gumroad.com/l/deSIDuous)**. Buying it supports development and includes updates and support.
+The ready-to-install Windows VST3 is sold together with a large sample and MIDI pack, all made with the plugin, at **[bananalytics.gumroad.com/l/deSIDuous](https://bananalytics.gumroad.com/l/deSIDuous)**. Buying it supports development and includes updates and support.
 
-| Platform | Copy `deSIDuous.vst3` to |
-|---|---|
-| Windows 10/11 (64-bit) | `C:\Program Files\Common Files\VST3` |
-| macOS 10.13+ (Apple Silicon and Intel) | `/Library/Audio/Plug-Ins/VST3` or `~/Library/Audio/Plug-Ins/VST3` |
-| Linux (64-bit) | `~/.vst3` |
+**What comes with it**
+- **1,376 loops** as 24-bit / 48 kHz stereo WAV, each with a matching **MIDI file**, so you can play them as audio or load the notes into any synth.
+- **334 one-shots**: drums, bass, leads, pads, keys, waves and sound effects.
+- Loops are sorted by tempo (72, 90, 108, 126, 144 and 180 BPM), key and chord progression, and split into drums, bass, pad, lead and arp parts. Parts from the same progression fit together, so you can build whole songs from them.
+- The VST3 plugin itself (Windows), the instrument that made every sound, so you can edit the presets and make your own.
+- The PDF manual, the licence texts and the source code for the plugin.
 
-Then rescan plugins in your DAW. deSIDuous appears as an instrument from "Bananalytics".
+**Install (Windows 10/11, 64-bit):** copy `deSIDuous.vst3` to `C:\Program Files\Common Files\VST3`, then rescan plugins in your DAW. deSIDuous appears as an instrument from "Bananalytics".
 
 📖 **[Read the user manual](docs/MANUAL.md)** ([PDF](docs/deSIDuous-Manual.pdf)) for a guide to every control, sound design recipes and the preset list. What changed in each version, with the gory chip details: **[CHANGELOG](CHANGELOG.md)**.
-
-**macOS:** the plugin isn't notarised by Apple, so macOS may block it the first time. After copying it, run this once in Terminal (adjust the path if you used `~/Library`):
-
-```bash
-xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/deSIDuous.vst3
-```
-
-**Linux:** built on Ubuntu 22.04. It should work on any distribution from about 2022 onwards.
 
 ## Features
 
