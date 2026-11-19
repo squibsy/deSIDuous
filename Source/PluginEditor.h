@@ -89,10 +89,14 @@ class ModPanel : public Panel
 public:
     explicit ModPanel (APVTS& s);
     void resized() override;
+
+    // where the editor's ANT VIEW button sits: just above LEGATO, in this panel's own coordinates
+    juce::Rectangle<int> antSlot() const { return antArea; }
 private:
     Choice shape, arpMode, arpChord, arpRule;
     Knob rate, vib, delay, toCut, toPw, arpSpeed, glide, bend;
     Toggle legato;
+    juce::Rectangle<int> antArea;
 };
 
 class GlobalPanel : public Panel
@@ -104,6 +108,53 @@ private:
     Knob poly, volume, velVol, outGain, bias, hardRestart;
     Toggle phaseReset;
     Choice combined, quality;
+};
+
+class ChorusPanel : public Panel
+{
+public:
+    explicit ChorusPanel (APVTS& s);
+    void resized() override;
+    void paint (juce::Graphics&) override;
+private:
+    Toggle one, two;
+};
+
+class DelayPanel : public Panel
+{
+public:
+    explicit DelayPanel (APVTS& s);
+    void resized() override;
+private:
+    Toggle on, sync;
+    Choice division;
+    Knob time, feedback, mix;
+};
+
+class ReverbPanel : public Panel
+{
+public:
+    explicit ReverbPanel (APVTS& s);
+    void resized() override;
+private:
+    Toggle on;
+    Knob size, damping, mix;
+};
+
+// Full-window view of the Langton arp's ant grid, drawn over the controls.
+class AntView : public juce::Component, private juce::Timer
+{
+public:
+    AntView (SidEngine& e, APVTS& s);
+    void paint (juce::Graphics&) override;
+    void visibilityChanged() override;
+private:
+    void timerCallback() override;
+    SidEngine& engine;
+    APVTS& state;
+    std::array<uint8_t, SidEngine::antCells> cells {};
+    int pos = -1, step = 0, offset = 0;
+    bool sounding = false;
 };
 
 class Scope : public juce::Component, private juce::Timer
@@ -144,6 +195,8 @@ public:
 private:
     void timerCallback() override;
     void choosePreset (int index);
+    void updateScopeMode();
+    void updateAntButton();   // ANT VIEW only works with the Langton arp
 
     DesiduousProcessor& processor;
     static constexpr int headerHeight = 84;
@@ -161,6 +214,11 @@ private:
     ui::FilterPanel filter;
     ui::ModPanel mod;
     ui::GlobalPanel global;
+    ui::ChorusPanel chorus;
+    ui::DelayPanel delay;
+    ui::ReverbPanel reverb;
+    juce::TextButton antButton { "ANT VIEW" }, scopeButton { "REGS" };
+    ui::AntView antView;
     ui::Panel scopePanel, regPanel;
     ui::Scope scope;
     ui::RegisterView registers;

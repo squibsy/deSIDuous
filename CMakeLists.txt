@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(deSIDuous VERSION 1.04 LANGUAGES C CXX)
+project(deSIDuous VERSION 1.05 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -72,6 +72,7 @@ target_sources(deSIDuous PRIVATE
     Source/PluginEditor.cpp
     Source/Params.cpp
     Source/SidEngine.cpp
+    Source/Effects.cpp
     Source/Presets.cpp
     Source/PresetsExtra.cpp
     Source/PresetsGM.cpp
@@ -101,7 +102,7 @@ target_link_libraries(deSIDuous
 option(DESIDUOUS_BUILD_TESTS "Build the RenderTest host" ON)
 if(DESIDUOUS_BUILD_TESTS)
     juce_add_console_app(RenderTest PRODUCT_NAME "RenderTest")
-    target_sources(RenderTest PRIVATE tools/RenderTest/Main.cpp tools/RenderTest/WinCapture.cpp)
+    target_sources(RenderTest PRIVATE tools/RenderTest/Main.cpp tools/RenderTest/WinCapture.cpp tools/RenderTest/Pack.cpp)
     target_compile_definitions(RenderTest PRIVATE
         JUCE_PLUGINHOST_VST3=1
         JUCE_MODAL_LOOPS_PERMITTED=1

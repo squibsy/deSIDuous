@@ -128,6 +128,14 @@ public:
     std::atomic<int> monitorChip { 0 };
     std::atomic<int> activeChipCount { 0 };
 
+    // Langton arp view: the monitored chip's ant grid and state
+    static constexpr int antCells = 32 * 32;
+    std::array<std::atomic<uint8_t>, antCells> monitorAnt {};
+    std::atomic<int> monitorAntPos { -1 };      // y * 32 + x, -1 when no ant is walking
+    std::atomic<int> monitorAntStep { 0 };
+    std::atomic<int> monitorAntOffset { 0 };    // semitones above the held note
+    std::atomic<bool> monitorAntSounding { false };
+
     static constexpr int scopeSize = 4096;
     juce::AbstractFifo scopeFifo { scopeSize };
     std::array<float, scopeSize> scopeData {};
@@ -179,6 +187,7 @@ private:
         std::array<uint8_t, antSize * antSize> antGrid {};
         int antX = 0, antY = 0, antUx = 0, antUy = 0, antDir = 0;
         int antOffset = 0;                         // semitones added to arp voices
+        bool antLastRight = true;                  // last step played (R) rather than rested (L)
         float gainNow = 1.0f, gainTarget = 1.0f;   // velocity, applied digitally
         float dcIn = 0.0f, dcOut = 0.0f;           // per-chip DC blocker
         bool freshStart = false;

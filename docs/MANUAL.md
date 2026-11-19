@@ -20,7 +20,7 @@ The SID's quirks come from the emulated chip itself: combined waveforms, ring mo
 6. [Filter](#6-filter)
 7. [LFO, arpeggio and glide](#7-lfo-arpeggio-and-glide)
 8. [Chip and output](#8-chip-and-output)
-9. [Oscilloscope and register monitor](#9-oscilloscope-and-register-monitor)
+9. [Effects, oscilloscope and registers](#9-effects-oscilloscope-and-registers)
 10. [Voice modes](#10-voice-modes)
 11. [Sound design recipes](#11-sound-design-recipes)
 12. [Factory presets](#12-factory-presets)
@@ -33,7 +33,7 @@ The SID's quirks come from the emulated chip itself: combined waveforms, ring mo
 
 ## 1. Installation
 
-Download the zip for your system from the [Releases page](https://github.com/squibsy/deSIDuous/releases/latest). Each zip contains a single `deSIDuous.vst3` plugin.
+Install the plugin from the download you received when you bought it ([bananalytics.gumroad.com/l/deSIDuous](https://bananalytics.gumroad.com/l/deSIDuous)), or build it yourself from the [source code](https://github.com/squibsy/deSIDuous), which is free software. Either way you end up with a single `deSIDuous.vst3` plugin.
 
 | System | Copy `deSIDuous.vst3` to |
 |---|---|
@@ -77,7 +77,7 @@ Classic C64 music made rich sounds from these limits with tricks: rapid arpeggio
 
 | Control | What it does |
 |---|---|
-| **< / preset menu / >** | Choose a factory preset. The menu is grouped by category. Choosing a preset resets every control to its default and then applies the preset. |
+| **< / preset menu / >** | Choose a factory preset. The menu is grouped by category. Choosing a preset resets every control to its default and then applies the preset. The effects are the exception: they stay as you set them while you browse. |
 | **CHIP** | **MOS 6581**: the original chip. Gritty, warm filter that varies between chips; combined waveforms are quiet. **MOS 8580**: the later revision. Cleaner, more precise filter with strong resonance; combined waveforms are louder. |
 | **VOICE MODE** | How MIDI notes are mapped onto the SID's voices. See [Voice modes](#10-voice-modes). |
 | **CLOCK** | **PAL** (985,248 Hz, European C64s) or **NTSC** (1,022,730 Hz, American C64s). Pitch is corrected automatically. This also sets the arpeggio's frame rate: 50 Hz for PAL, 60 Hz for NTSC. |
@@ -201,6 +201,8 @@ Each note starts the ant again on a blank grid, so the same note always plays th
 
 Langton works best with slower steps: an **ARP SPD** of 6 to 8 frames is roughly 16th notes at 100 to 125 BPM. Short, plucky envelopes make the rests easier to hear. Voices with **ARP** off keep holding the base note, which makes a drone under the pattern.
 
+Click **ANT VIEW** to watch the ant. The button sits in the LFO / ARP / GLIDE panel, just above **LEGATO**, and it is greyed out unless **ARP MODE** is set to Langton; switching to another arp mode closes the view. Click it again to get the controls back. It covers the controls with the grid of the chip playing the most recent note: each cell colour is one letter of the rule, and the ant is the outlined square, white while it plays and grey while it rests. Next to the grid are the rule, chord, step count and the current note above the one you hold. The keyboard stays visible, so you can play while watching.
+
 ### Glide
 
 | Control | What it does |
@@ -225,9 +227,44 @@ Langton works best with slower steps: an **ARP SPD** of 6 to 8 frames is roughly
 | **HARD RST** | Hard restart: briefly clears the envelope before each note (0 to 40 ms). The SID has a known envelope bug where a note sometimes starts late or quietly. C64 composers worked around it this way, at the cost of a short delay. |
 | **OSC RESET** | Restarts each voice's oscillator at the start of each note, so every note begins the same way. Adds about 1 ms of delay. |
 
-## 9. Oscilloscope and register monitor
+## 9. Effects, oscilloscope and registers
 
-![Oscilloscope and register monitor](images/scope-registers.png)
+![Effects and oscilloscope](images/scope-registers.png)
+
+The bottom row holds three effects, applied after the SID chips in this order: chorus, delay, reverb. A real C64 had none of these, so they're all off by default. They aren't part of the presets: changing preset leaves them as they are.
+
+### Judo chorus
+
+A stereo chorus modelled on the bucket-brigade choruses of classic 1980s analogue polysynths. The signal runs through a short delay line that a slow triangle LFO sweeps; the left and right outputs read it in opposite directions, which spreads a mono SID voice across the stereo field.
+
+| Control | What it does |
+|---|---|
+| **I** | Gentle, slow sweep (0.5 Hz). |
+| **II** | Deeper, faster sweep (0.86 Hz). |
+| **I + II** | Press both for the fast, shallow vibrato-like setting (9.75 Hz). |
+
+### Delay
+
+| Control | What it does |
+|---|---|
+| **ON** | Switches the delay on. |
+| **SYNC** | On: **TIME** is a note length at the host tempo, from 1/32 to a whole bar (T = triplet, D = dotted). Off: **TIME** is in milliseconds, from 1 ms to 2 s. Without a host tempo (some standalone hosts), synced times use 120 BPM. |
+| **TIME** | The delay time. Changing it while echoes are playing bends their pitch, like a tape delay. |
+| **FEEDBACK** | How much of each echo is fed back into the delay. Higher values give more repeats, up to 95%. The repeats get slightly darker each time. |
+| **MIX** | Balance between the dry sound and the echoes. 50% is equal parts, 100% is echoes only. |
+
+### Reverb
+
+| Control | What it does |
+|---|---|
+| **ON** | Switches the reverb on. |
+| **SIZE** | Room size. Bigger rooms ring longer. |
+| **DAMP** | High-frequency damping. More damping makes the tail darker. |
+| **MIX** | Balance between the dry sound and the reverb. |
+
+### Oscilloscope and register monitor
+
+The panel on the right of the bottom row shows one of two displays. Click **REGS** or **SCOPE** in its top corner to switch.
 
 - **OSCILLOSCOPE** shows the plugin's output waveform.
 - **REGISTERS $D400-$D418** shows the 25 SID registers exactly as deSIDuous writes them, in hex, for the chip that played most recently. They're colour-coded by voice, with the filter and volume registers in yellow. **ACTIVE CHIPS** shows how many chips are currently sounding.
@@ -444,6 +481,14 @@ All settings can be automated from your DAW. Ranges are given in the units shown
 | | Arp Ant Rule | RL, RLR, LLRR, LRRRRRLLR, RRLLLRLLLRRR |
 | | Arp Chord | 12 chord shapes |
 | | Arp Speed | 1 to 16 frames |
+| Effects | Chorus I / Chorus II | on / off |
+| | Delay On / Delay Sync | on / off |
+| | Delay Division | 1/32 to 1/1, with triplet and dotted values |
+| | Delay Time | 1 ms to 2 s |
+| | Delay Feedback | 0 to 95% |
+| | Delay Mix | 0 to 100% |
+| | Reverb On | on / off |
+| | Reverb Size / Reverb Damping / Reverb Mix | 0 to 100% |
 
 ---
 

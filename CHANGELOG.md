@@ -1,6 +1,20 @@
 # Changelog
 
-## Unreleased
+## 1.05
+
+### New: effects
+
+Three effects now sit after the SID chips, in the bottom row of the window. All are off by default, and changing preset leaves them as they are.
+
+- **Judo chorus**: a stereo bucket-brigade chorus modelled on classic 1980s analogue polysynth choruses, with two buttons. **I** is a slow, gentle sweep and **II** is deeper and faster. Pressing both gives the fast I+II setting.
+- **Delay**: tempo-synced (1/32 to a whole bar, with triplet and dotted values) or free (1 ms to 2 s), with feedback up to 95% and a dry/wet mix. Repeats get a little darker each time, and changing the time bends the pitch of the echoes like a tape delay.
+- **Reverb**: room size, damping and mix.
+
+The oscilloscope and register monitor now share one panel to make room: click **REGS** or **SCOPE** in the panel's corner to switch. The window keeps its size.
+
+### New: ant view
+
+An **ANT VIEW** button in the header shows the Langton arp's grid over the controls: the cells the ant has painted, the ant itself (white while it plays, grey while it rests), and the rule, chord, step and current note. The keyboard stays visible underneath.
 
 ### New: Langton arp mode
 

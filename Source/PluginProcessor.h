@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "SidEngine.h"
+#include "Effects.h"
 
 class DesiduousProcessor : public juce::AudioProcessor,
                            private juce::AudioProcessorValueTreeState::Listener,
@@ -13,7 +14,7 @@ public:
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
-    void reset() override { engine.requestChipReset(); }
+    void reset() override { engine.requestChipReset(); effects.reset(); }
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
@@ -24,7 +25,7 @@ public:
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 2.0; }
+    double getTailLengthSeconds() const override { return 8.0; }   // long delay feedback + reverb
 
     int getNumPrograms() override;
     int getCurrentProgram() override { return currentProgram; }
@@ -38,6 +39,8 @@ public:
     juce::AudioProcessorValueTreeState state;
     SidEngine engine;
     juce::MidiKeyboardState keyboardState;   // on-screen keyboard
+    bool showAntView = false;                // editor state, kept while the editor is closed
+    bool showRegisters = false;
 
 private:
     struct VoicePtrs
@@ -51,6 +54,12 @@ private:
                        *cutoff, *resonance, *lp, *bp, *hp, *v3off, *fEnvAmount, *fAttack, *fDecay, *fSustain, *fRelease,
                        *fKeyTrack, *fVelocity, *lfoRate, *lfoShape, *lfoVib, *lfoDelay, *lfoCutoff, *lfoPW,
                        *arpMode, *arpChord, *arpSpeed, *arpRule;
+    std::atomic<float> *chorus1, *chorus2, *delayOn, *delaySync, *delayDivision, *delayTime, *delayFeedback, *delayMix,
+                       *reverbOn, *reverbSize, *reverbDamping, *reverbMix;
+    Effects effects;
+    double hostBpm = 120.0;
+
+    FxSettings fxSnapshot() const;
 
     EngineSettings snapshot() const;
     void parameterChanged (const juce::String& id, float) override;

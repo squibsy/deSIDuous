@@ -41,6 +41,11 @@ DesiduousProcessor::DesiduousProcessor()
     lfoDelay = get (Params::lfoDelay);     lfoCutoff = get (Params::lfoCutoff); lfoPW = get (Params::lfoPW);
     arpMode = get (Params::arpMode);       arpChord = get (Params::arpChord);   arpSpeed = get (Params::arpSpeed);
     arpRule = get (Params::arpRule);
+    chorus1 = get (Params::chorus1);       chorus2 = get (Params::chorus2);
+    delayOn = get (Params::delayOn);       delaySync = get (Params::delaySync); delayDivision = get (Params::delayDivision);
+    delayTime = get (Params::delayTime);   delayFeedback = get (Params::delayFeedback); delayMix = get (Params::delayMix);
+    reverbOn = get (Params::reverbOn);     reverbSize = get (Params::reverbSize); reverbDamping = get (Params::reverbDamping);
+    reverbMix = get (Params::reverbMix);
 
     state.addParameterListener (Params::clock, this);
     state.addParameterListener (Params::quality, this);
@@ -94,8 +99,22 @@ EngineSettings DesiduousProcessor::snapshot() const
     return s;
 }
 
-void DesiduousProcessor::prepareToPlay (double sampleRate, int)
+FxSettings DesiduousProcessor::fxSnapshot() const
 {
+    FxSettings f;
+    auto b = [] (const std::atomic<float>* p) { return p->load (std::memory_order_relaxed) > 0.5f; };
+    auto v = [] (const std::atomic<float>* p) { return p->load (std::memory_order_relaxed); };
+    f.chorus1 = b (chorus1); f.chorus2 = b (chorus2);
+    f.delayOn = b (delayOn); f.delaySync = b (delaySync); f.delayDivision = juce::roundToInt (v (delayDivision));
+    f.delayMs = v (delayTime); f.delayFeedback = v (delayFeedback); f.delayMix = v (delayMix);
+    f.reverbOn = b (reverbOn); f.reverbSize = v (reverbSize); f.reverbDamping = v (reverbDamping); f.reverbMix = v (reverbMix);
+    f.bpm = hostBpm;
+    return f;
+}
+
+void DesiduousProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+{
+    effects.prepare (sampleRate, samplesPerBlock);
     if (sampleRate != currentSampleRate || engine.needsRebuild (snapshot()))
     {
         currentSampleRate = sampleRate;
@@ -121,6 +140,12 @@ void DesiduousProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     juce::ScopedNoDenormals noDenormals;
     keyboardState.processNextMidiBuffer (midi, 0, buffer.getNumSamples(), true);
     engine.process (buffer, midi, snapshot());
+
+    if (auto* head = getPlayHead())
+        if (auto pos = head->getPosition())
+            if (auto bpm = pos->getBpm())
+                hostBpm = *bpm;
+    effects.process (buffer, fxSnapshot());
 }
 
 //==============================================================================

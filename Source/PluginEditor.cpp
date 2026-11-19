@@ -250,7 +250,10 @@ void ModPanel::resized()
         c->setBounds (c->getBounds().reduced (3, 0));
     area.removeFromTop (6);
     auto legatoRow = area.removeFromBottom (24);
-    legato.setBounds (legatoRow.removeFromRight (90).reduced (2, 0));
+    const auto legatoBounds = legatoRow.removeFromRight (90).reduced (2, 0);
+    legato.setBounds (legatoBounds);
+    // the second row of knobs has two empty cells on the right; the ANT VIEW button goes in the one above LEGATO
+    antArea = { legatoBounds.getX(), legatoBounds.getY() - 28, legatoBounds.getWidth(), 22 };
     gridLayout<juce::Component> (area, 5, 2, { &rate, &vib, &delay, &toCut, &toPw, &arpSpeed, &glide, &bend });
 }
 
@@ -281,6 +284,201 @@ void GlobalPanel::resized()
     auto bottom = area.removeFromBottom (24);
     phaseReset.setBounds (bottom.removeFromRight (100).reduced (2, 0));
     gridLayout<juce::Component> (area, 3, 2, { &poly, &volume, &velVol, &outGain, &bias, &hardRestart });
+}
+
+//==============================================================================
+ChorusPanel::ChorusPanel (APVTS& st)
+    : Panel ("JUDO CHORUS", C64::lightBlue.brighter (0.6f)),
+      one (st, Params::chorus1, "I", "Chorus I: slow, gentle sweep (0.5 Hz)"),
+      two (st, Params::chorus2, "II", "Chorus II: deeper, faster sweep (0.86 Hz). Press both for the fast I+II vibrato.")
+{
+    addAndMakeVisible (one);
+    addAndMakeVisible (two);
+    for (auto* b : { &one, &two })
+        b->onStateChange = [this] { repaint(); };
+}
+
+void ChorusPanel::resized()
+{
+    auto area = content().withTrimmedTop (6);
+    auto buttons = area.removeFromTop (30);
+    one.setBounds (buttons.removeFromLeft (buttons.getWidth() / 2).reduced (3, 0));
+    two.setBounds (buttons.reduced (3, 0));
+}
+
+void ChorusPanel::paint (juce::Graphics& g)
+{
+    Panel::paint (g);
+    const bool a = one.getToggleState(), b = two.getToggleState();
+    const juce::String mode = a && b ? "I + II" : a ? "I" : b ? "II" : "OFF";
+    auto area = content().withTrimmedTop (44).reduced (3, 0);
+    g.setColour (a || b ? C64::accent : C64::textDim);
+    g.setFont (SidLookAndFeel::monoFont (13.0f));
+    g.drawText ("MODE " + mode, area.removeFromTop (20), juce::Justification::centredLeft);
+    g.setColour (C64::textDim);
+    g.setFont (SidLookAndFeel::monoFont (11.0f, false));
+    g.drawText ("Press both for I+II", area.removeFromTop (18), juce::Justification::centredLeft);
+}
+
+//==============================================================================
+DelayPanel::DelayPanel (APVTS& st)
+    : Panel ("DELAY", C64::yellow),
+      on (st, Params::delayOn, "ON"),
+      sync (st, Params::delaySync, "SYNC", "Lock the delay time to the host tempo"),
+      division (st, Params::delayDivision, "TIME", "Delay time as a note length at the host tempo (T = triplet, D = dotted)"),
+      time (st, Params::delayTime, "TIME"),
+      feedback (st, Params::delayFeedback, "FEEDBACK", "How much of each echo is fed back: more feedback, more repeats"),
+      mix (st, Params::delayMix, "MIX", "Balance of dry signal and echoes")
+{
+    for (juce::Component* c : std::initializer_list<juce::Component*> { &on, &sync, &division, &time, &feedback, &mix })
+        addAndMakeVisible (c);
+    sync.onStateChange = [this] {
+        division.setVisible (sync.getToggleState());
+        time.setVisible (! sync.getToggleState());
+    };
+    sync.onStateChange();
+}
+
+void DelayPanel::resized()
+{
+    auto area = content();
+    auto buttons = area.removeFromLeft (64);
+    on.setBounds (buttons.removeFromTop (buttons.getHeight() / 2).reduced (2, 3));
+    sync.setBounds (buttons.reduced (2, 3));
+    area.removeFromLeft (6);
+    auto slot = area.removeFromLeft (area.getWidth() / 3);
+    time.setBounds (slot);
+    division.setBounds (slot.withSizeKeepingCentre (slot.getWidth() - 6, 38));
+    gridLayout<juce::Component> (area, 2, 1, { &feedback, &mix });
+}
+
+//==============================================================================
+ReverbPanel::ReverbPanel (APVTS& st)
+    : Panel ("REVERB", C64::lightGreen),
+      on (st, Params::reverbOn, "ON"),
+      size (st, Params::reverbSize, "SIZE", "Room size: bigger rooms ring longer"),
+      damping (st, Params::reverbDamping, "DAMP", "High-frequency damping: more damping, darker tail"),
+      mix (st, Params::reverbMix, "MIX", "Balance of dry signal and reverb")
+{
+    for (juce::Component* c : std::initializer_list<juce::Component*> { &on, &size, &damping, &mix })
+        addAndMakeVisible (c);
+}
+
+void ReverbPanel::resized()
+{
+    auto area = content();
+    auto buttons = area.removeFromLeft (64);
+    on.setBounds (buttons.withSizeKeepingCentre (buttons.getWidth(), 30).reduced (2, 3));
+    area.removeFromLeft (6);
+    gridLayout<juce::Component> (area, 3, 1, { &size, &damping, &mix });
+}
+
+//==============================================================================
+AntView::AntView (SidEngine& e, APVTS& s) : engine (e), state (s)
+{
+    setInterceptsMouseClicks (true, false);   // the controls underneath stay covered while it's open
+}
+
+void AntView::visibilityChanged()
+{
+    if (isVisible())
+    {
+        timerCallback();
+        startTimerHz (30);
+    }
+    else
+    {
+        stopTimer();
+    }
+}
+
+void AntView::timerCallback()
+{
+    for (int i = 0; i < SidEngine::antCells; ++i)
+        cells[(size_t) i] = engine.monitorAnt[(size_t) i].load (std::memory_order_relaxed);
+    pos = engine.monitorAntPos.load (std::memory_order_relaxed);
+    step = engine.monitorAntStep.load (std::memory_order_relaxed);
+    offset = engine.monitorAntOffset.load (std::memory_order_relaxed);
+    sounding = engine.monitorAntSounding.load (std::memory_order_relaxed);
+    repaint();
+}
+
+void AntView::paint (juce::Graphics& g)
+{
+    g.fillAll (C64::background);
+
+    static const juce::Colour palette[] = { C64::blue, C64::lightBlue, C64::cyan, C64::lightGreen, C64::yellow, C64::lightRed,
+                                            C64::purple, C64::orange, C64::grey, C64::voice1, C64::voice3, C64::white };
+    constexpr int n = 32;
+
+    auto area = getLocalBounds().reduced (16);
+    const int side = juce::jmin (area.getHeight(), area.getWidth() * 3 / 5) / n * n;
+    auto gridArea = area.removeFromLeft (side).withSizeKeepingCentre (side, side);
+    const float cell = (float) side / (float) n;
+
+    for (int y = 0; y < n; ++y)
+        for (int x = 0; x < n; ++x)
+        {
+            g.setColour (palette[cells[(size_t) (y * n + x)] % std::size (palette)]);
+            g.fillRect (gridArea.getX() + x * cell, gridArea.getY() + y * cell, cell, cell);
+        }
+
+    g.setColour (C64::background.withAlpha (0.35f));
+    for (int i = 1; i < n; ++i)
+    {
+        g.drawVerticalLine (gridArea.getX() + (int) (i * cell), (float) gridArea.getY(), (float) gridArea.getBottom());
+        g.drawHorizontalLine (gridArea.getY() + (int) (i * cell), (float) gridArea.getX(), (float) gridArea.getRight());
+    }
+    g.setColour (C64::panelEdge);
+    g.drawRect (gridArea.expanded (2), 2);
+
+    if (pos >= 0)
+    {
+        const auto r = juce::Rectangle<float> (gridArea.getX() + (float) (pos % n) * cell, gridArea.getY() + (float) (pos / n) * cell, cell, cell);
+        g.setColour (sounding ? C64::white : C64::textDim);
+        g.fillRect (r.reduced (1.0f));
+        g.setColour (C64::accent);
+        g.drawRect (r.expanded (2.0f), 2.0f);
+    }
+
+    // ---- info column ----
+    area.removeFromLeft (28);
+    const int mode = juce::roundToInt (state.getRawParameterValue (Params::arpMode)->load());
+    const int ruleIndex = juce::jlimit (0, Params::numAntRules - 1, juce::roundToInt (state.getRawParameterValue (Params::arpRule)->load()));
+    const int chordIndex = juce::jlimit (0, Params::numChords - 1, juce::roundToInt (state.getRawParameterValue (Params::arpChord)->load()));
+    const bool langton = mode == (int) Params::ArpMode::Langton;
+
+    g.setColour (C64::text);
+    g.setFont (SidLookAndFeel::monoFont (26.0f));
+    g.drawText ("LANGTON ARP", area.removeFromTop (40), juce::Justification::centredLeft);
+    area.removeFromTop (8);
+
+    auto line = [&] (const juce::String& label, const juce::String& value, juce::Colour c) {
+        auto row = area.removeFromTop (26);
+        g.setFont (SidLookAndFeel::monoFont (15.0f, false));
+        g.setColour (C64::textDim);
+        g.drawText (label, row.removeFromLeft (110), juce::Justification::centredLeft);
+        g.setColour (c);
+        g.drawText (value, row, juce::Justification::centredLeft);
+    };
+    line ("RULE", Params::antRules[ruleIndex], C64::text);
+    line ("CHORD", Params::chords[chordIndex].name, C64::text);
+    line ("STEP", pos >= 0 ? juce::String (step) : "-", C64::text);
+    line ("NOTE", pos >= 0 ? "+" + juce::String (offset) + " st" : "-", C64::text);
+    line ("STATE", pos < 0 ? "IDLE" : (sounding ? "PLAYING" : "RESTING"), sounding ? C64::accent : C64::textDim);
+
+    area.removeFromTop (18);
+    g.setFont (SidLookAndFeel::monoFont (13.0f, false));
+    g.setColour (langton ? C64::textDim : C64::accent);
+    const juce::String hint = ! langton ? "Set ARP MODE to Langton, then hold a note."
+                            : pos < 0   ? "Hold a note to start the ant."
+                                        : "A right turn plays a note, a left turn rests. Pitch follows the ant's diagonal position, on the notes of the chord.";
+    g.drawFittedText (hint, area.removeFromTop (60), juce::Justification::topLeft, 3);
+
+    g.setColour (C64::textDim);
+    g.drawFittedText ("Each cell colour is one letter of the rule. Showing chip " + juce::String (engine.monitorChip.load() + 1)
+                          + ", the one playing the most recent note.",
+                      area.removeFromTop (40), juce::Justification::topLeft, 2);
 }
 
 //==============================================================================
@@ -379,6 +577,8 @@ DesiduousEditor::DesiduousEditor (DesiduousProcessor& p)
       mode (p.state, Params::voiceMode, "VOICE MODE", "Layered Poly: each note plays all 3 voices on its own chip. Paraphonic: one chip, one note per voice. MIDI Ch 1-3: channel N drives voice N."),
       clock (p.state, Params::clock, "CLOCK"),
       filter (p.state), mod (p.state), global (p.state),
+      chorus (p.state), delay (p.state), reverb (p.state),
+      antView (p.engine, p.state),
       scopePanel ("OSCILLOSCOPE", C64::lightGreen), regPanel ("REGISTERS $D400-$D418", C64::accent),
       scope (p.engine), registers (p.engine),
       keyboard (p.keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard)
@@ -445,10 +645,76 @@ DesiduousEditor::DesiduousEditor (DesiduousProcessor& p)
     keyboard.setLowestVisibleKey (36);
     addAndMakeVisible (keyboard);
 
+    addAndMakeVisible (chorus);
+    addAndMakeVisible (delay);
+    addAndMakeVisible (reverb);
+
+    // the scope and register monitor share one panel
+    scopeButton.setTooltip ("Switch between the oscilloscope and the SID register monitor");
+    scopeButton.onClick = [this] {
+        processor.showRegisters = ! processor.showRegisters;
+        updateScopeMode();
+    };
+    addAndMakeVisible (scopeButton);
+    updateScopeMode();
+
+    antButton.setClickingTogglesState (true);
+    antButton.setTooltip ("Show the Langton arp's ant grid over the controls");
+    antButton.setToggleState (processor.showAntView, juce::dontSendNotification);
+    antButton.onClick = [this] {
+        processor.showAntView = antButton.getToggleState();
+        antView.setVisible (processor.showAntView);
+        if (processor.showAntView)
+        {
+            antView.toFront (false);
+            antButton.toFront (false);   // the button now sits inside the area the ant view covers, so it has to stay on top
+        }
+    };
+    addAndMakeVisible (antButton);
+    addChildComponent (antView);
+    antView.setVisible (processor.showAntView);
+    antButton.toFront (false);
+    updateAntButton();
+
     logo = juce::ImageCache::getFromMemory (BinaryData::logo_png, BinaryData::logo_pngSize);
 
     setSize (1184, 770 - 54 + headerHeight);
     startTimerHz (10);
+}
+
+void DesiduousEditor::updateScopeMode()
+{
+    scopePanel.setVisible (! processor.showRegisters);
+    regPanel.setVisible (processor.showRegisters);
+    scopeButton.setButtonText (processor.showRegisters ? "SCOPE" : "REGS");
+    scopeButton.toFront (false);
+    if (antView.isVisible())
+    {
+        antView.toFront (false);
+        antButton.toFront (false);
+    }
+}
+
+void DesiduousEditor::updateAntButton()
+{
+    // the ant grid belongs to the Langton arp, so the button only works while ARP MODE is Langton
+    bool langton = false;
+    if (auto* p = dynamic_cast<juce::AudioParameterChoice*> (processor.state.getParameter (Params::arpMode)))
+        langton = p->getCurrentChoiceName() == "Langton";
+
+    if (antButton.isEnabled() != langton)
+    {
+        antButton.setEnabled (langton);
+        antButton.setTooltip (langton ? "Show the Langton arp's ant grid over the controls"
+                                      : "Available when ARP MODE is set to Langton");
+    }
+
+    if (! langton && (processor.showAntView || antView.isVisible()))   // leaving Langton closes the view
+    {
+        processor.showAntView = false;
+        antButton.setToggleState (false, juce::dontSendNotification);
+        antView.setVisible (false);
+    }
 }
 
 DesiduousEditor::~DesiduousEditor()
@@ -470,6 +736,7 @@ void DesiduousEditor::timerCallback()
     const int id = processor.getCurrentProgram() + 1;
     if (presetBox.getSelectedId() != id)
         presetBox.setSelectedId (id, juce::dontSendNotification);
+    updateAntButton();
 }
 
 void DesiduousEditor::paint (juce::Graphics& g)
@@ -519,9 +786,9 @@ void DesiduousEditor::resized()
     nextButton.setBounds (presetArea.removeFromRight (28).withTrimmedTop (14).withHeight (22));
     presetBox.setBounds (presetArea.reduced (4, 0).withTrimmedTop (14).withHeight (22));
     header.removeFromLeft (8);
-    chip.setBounds (header.removeFromLeft (120).reduced (3, 0));
-    mode.setBounds (header.removeFromLeft (190).reduced (3, 0));
-    clock.setBounds (header.removeFromLeft (160).reduced (3, 0));
+    chip.setBounds (header.removeFromLeft (110).reduced (3, 0));
+    mode.setBounds (header.removeFromLeft (175).reduced (3, 0));
+    clock.setBounds (header.removeFromLeft (130).reduced (3, 0));
 
     area.removeFromTop (gap);
     const int colW = (area.getWidth() - 2 * gap) / 3;
@@ -537,15 +804,24 @@ void DesiduousEditor::resized()
     row = area.removeFromTop (230);
     filter.setBounds (row.removeFromLeft (colW)); row.removeFromLeft (gap);
     mod.setBounds (row.removeFromLeft (colW));    row.removeFromLeft (gap);
+    antButton.setBounds (mod.antSlot().translated (mod.getX(), mod.getY()));   // above LEGATO in the arp section
     global.setBounds (row);
 
+    // effects share the bottom row with the scope; the scope panel flips to the registers
     area.removeFromTop (gap);
     row = area.removeFromTop (130);
-    scopePanel.setBounds (row.removeFromLeft (colW * 2 + gap)); row.removeFromLeft (gap);
+    chorus.setBounds (row.removeFromLeft (150)); row.removeFromLeft (gap);
+    delay.setBounds (row.removeFromLeft (340));  row.removeFromLeft (gap);
+    reverb.setBounds (row.removeFromLeft (262)); row.removeFromLeft (gap);
+    scopePanel.setBounds (row);
     regPanel.setBounds (row);
     scope.setBounds (scopePanel.content());
     registers.setBounds (regPanel.content());
+    scopeButton.setBounds (row.getRight() - 70, row.getY() + 2, 64, 16);
 
     area.removeFromTop (gap);
     keyboard.setBounds (area.removeFromTop (70));
+
+    // the ant view covers everything between the header and the keyboard
+    antView.setBounds (getLocalBounds().withTop (headerHeight).withBottom (keyboard.getY() - gap / 2));
 }

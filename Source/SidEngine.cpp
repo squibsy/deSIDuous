@@ -340,6 +340,22 @@ void SidEngine::publishMonitor()
     const int c = juce::jlimit (0, maxChips - 1, monitorChip.load (std::memory_order_relaxed));
     for (int r = 0; r < numRegs; ++r)
         monitorRegs[(size_t) r].store (chips[(size_t) c].chip->reg (r), std::memory_order_relaxed);
+
+    const auto& ch = chips[(size_t) c];
+    bool walking = lastArpMode == (int) Params::ArpMode::Langton && ch.active;
+    if (walking)
+    {
+        walking = false;
+        for (auto& v : ch.v)
+            walking = walking || v.keyDown || v.startPending;
+    }
+    if (lastArpMode == (int) Params::ArpMode::Langton)
+        for (int i = 0; i < antCells; ++i)
+            monitorAnt[(size_t) i].store (ch.antGrid[(size_t) i], std::memory_order_relaxed);
+    monitorAntStep.store (ch.arpStep, std::memory_order_relaxed);
+    monitorAntOffset.store (ch.antOffset, std::memory_order_relaxed);
+    monitorAntSounding.store (walking && ch.antLastRight, std::memory_order_relaxed);
+    monitorAntPos.store (walking ? ch.antY * ChipRT::antSize + ch.antX : -1, std::memory_order_relaxed);
 }
 
 //==============================================================================
@@ -735,6 +751,7 @@ void SidEngine::restartArp (ChipRT& c, const EngineSettings& s)
     c.antUx = c.antUy = 0;
     c.antDir = 0;
     c.antOffset = 0;
+    c.antLastRight = true;
     for (auto& v : c.v)
         v.antRest = false;
 
@@ -801,6 +818,7 @@ void SidEngine::stepAnt (ChipRT& c, const EngineSettings& s)
     }
     if (right)
         c.antOffset = offset;
+    c.antLastRight = right;
 }
 
 void SidEngine::releaseVoice (VoiceRT& v)

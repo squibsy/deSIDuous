@@ -80,6 +80,21 @@ namespace Params
     constexpr const char* arpSpeed = "arpspeed";
     constexpr const char* arpRule  = "arprule";
 
+    // ---- Effects (IDs start with "fx_": presets leave these alone) ----
+    constexpr const char* fxPrefix      = "fx_";
+    constexpr const char* chorus1       = "fx_chorus1";
+    constexpr const char* chorus2       = "fx_chorus2";
+    constexpr const char* delayOn       = "fx_dly_on";
+    constexpr const char* delaySync     = "fx_dly_sync";
+    constexpr const char* delayDivision = "fx_dly_div";
+    constexpr const char* delayTime     = "fx_dly_ms";
+    constexpr const char* delayFeedback = "fx_dly_fb";
+    constexpr const char* delayMix      = "fx_dly_mix";
+    constexpr const char* reverbOn      = "fx_rev_on";
+    constexpr const char* reverbSize    = "fx_rev_size";
+    constexpr const char* reverbDamping = "fx_rev_damp";
+    constexpr const char* reverbMix     = "fx_rev_mix";
+
     // Data sheet envelope rates (ms) for register values 0..15
     constexpr float attackMs[16]  = { 2, 8, 16, 24, 38, 56, 68, 80, 100, 250, 500, 800, 1000, 3000, 5000, 8000 };
     constexpr float decayMs[16]   = { 6, 24, 48, 72, 114, 168, 204, 240, 300, 750, 1500, 2400, 3000, 9000, 15000, 24000 };

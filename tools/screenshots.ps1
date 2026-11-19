@@ -15,6 +15,7 @@ param(
 )
 
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Windows.Forms
 Add-Type @'
 using System; using System.Runtime.InteropServices;
 public static class Win {
@@ -39,8 +40,9 @@ $panels = @{
     filter   = @(8, 350, 384, 230)
     mod      = @(400, 350, 384, 230)
     global   = @(792, 350, 384, 230)
-    scope    = @(8, 588, 776, 130)
-    regs     = @(792, 588, 384, 130)
+    scope    = @(784, 588, 392, 130)
+    regs     = @(784, 588, 392, 130)
+    fx       = @(8, 588, 768, 130)
     bottom   = @(8, 588, 1168, 130)
     keyboard = @(0, 726, 1184, 74)
 }
@@ -71,6 +73,9 @@ foreach ($program in $shots.Keys) {
     $h = $p.MainWindowHandle
     [Win]::SetForegroundWindow($h) | Out-Null
     Start-Sleep -Milliseconds 300
+    # park the mouse outside the plugin window so no tooltip is showing in the screenshot
+    [System.Windows.Forms.Cursor]::Position = [System.Drawing.Point]::new(2, 2)
+    Start-Sleep -Milliseconds 900
 
     $rc = New-Object Win+RECT; [Win]::GetClientRect($h, [ref]$rc) | Out-Null
     $pt = New-Object Win+POINT; [Win]::ClientToScreen($h, [ref]$pt) | Out-Null

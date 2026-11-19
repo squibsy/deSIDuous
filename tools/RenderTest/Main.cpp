@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <thread>
 #include "WinCapture.h"
+#include "Pack.h"
 
 #ifndef _WIN32
  #define _popen popen
@@ -434,6 +435,9 @@ int main (int argc, char** argv)
         return runMulti (fm, *descs[0], juce::File (argv[2]), argc > 4 ? juce::String (argv[4]).getDoubleValue() : 60.0);
     }
 
+    if (argc > 4 && juce::String (argv[3]) == "--pack")   // RenderTest <vst3> <outdir> --pack <manifest>
+        return runPack (*plugin, juce::File (argv[4]), juce::File (argv[2]));
+
     if (argc > 5 && juce::String (argv[3]) == "--demo")
         return runDemo (*plugin, juce::File (argv[4]), juce::File (argv[2]), argv[5]);
 
@@ -568,6 +572,48 @@ int main (int argc, char** argv)
             r->setValueNotifyingHost (0.0f);
         }
         am->setValueNotifyingHost (0.0f);
+    }
+
+    // ---- effects on the init patch ----
+    plugin->setCurrentProgram (0);
+    juce::MessageManager::getInstance()->runDispatchLoopUntil (50);
+    {
+        auto set = [&] (const char* name, float normalised) {
+            if (auto* p = findParam (*plugin, name)) p->setValueNotifyingHost (normalised);
+            else std::printf ("  !! missing parameter %s\n", name);
+        };
+        auto run = [&] (const char* label, const char* file, std::vector<std::pair<int, int>> notes = { { 1, 57 } }) {
+            const auto s = render (*plugin, notes, 1.0, 5.0, outDir.getChildFile (file));
+            std::printf ("  %-24s rms %6.1f dB  peak %6.1f dB  tail %.2f s%s\n", label, s.rmsDb, s.peakDb, s.tailSec,
+                         s.peakDb > -0.5f ? "  << CLIPS" : "");
+        };
+        for (auto* name : { "V2 On", "V3 On" }) set (name, 0.0f);
+
+        std::cout << "\nEffects (Init Saw):\n";
+        run ("dry", "fx_dry.wav");
+        set ("Chorus I", 1.0f);                         run ("chorus I", "fx_chorus1.wav");
+        set ("Chorus I", 0.0f); set ("Chorus II", 1.0f); run ("chorus II", "fx_chorus2.wav");
+        set ("Chorus I", 1.0f);                         run ("chorus I+II", "fx_chorus12.wav");
+        set ("Chorus I", 0.0f); set ("Chorus II", 0.0f);
+
+        set ("Delay On", 1.0f); set ("Delay Division", 6.0f / 11.0f);   // 1/8D
+        set ("Delay Feedback", 0.5f / 0.95f); set ("Delay Mix", 0.4f);
+        run ("delay 1/8D fb 50%", "fx_delay.wav");
+        set ("Delay On", 0.0f);
+
+        set ("Reverb On", 1.0f); set ("Reverb Size", 0.7f); set ("Reverb Mix", 0.3f);
+        run ("reverb size 70%", "fx_reverb.wav");
+
+        set ("Chorus I", 1.0f); set ("Delay On", 1.0f);
+        run ("all three, 4-note chord", "fx_all_chord.wav", { { 1, 60 }, { 1, 64 }, { 1, 67 }, { 1, 71 } });
+
+        // effects survive a preset change
+        plugin->setCurrentProgram (1);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (50);
+        const auto* rev = findParam (*plugin, "Reverb On");
+        std::printf ("  after preset change      reverb on = %s (expected yes)\n", rev != nullptr && rev->getValue() > 0.5f ? "yes" : "no");
+
+        for (auto* name : { "Chorus I", "Delay On", "Reverb On" }) set (name, 0.0f);
     }
 
     // ---- state round trip ----

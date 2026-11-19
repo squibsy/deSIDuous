@@ -1,4 +1,5 @@
 #include "Params.h"
+#include "Effects.h"
 
 namespace Params
 {
@@ -159,6 +160,27 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         juce::StringArray ruleNames;
         for (auto* r : antRules) ruleNames.add (r);
         g->addChild (std::make_unique<APC> (pid (arpRule), "Arp Ant Rule", ruleNames, 0));
+        layout.add (std::move (g));
+    }
+
+    // ------------------------------------------------------------------ effects
+    {
+        auto pct = Attr().withStringFromValueFunction ([] (float v, int) { return juce::String (juce::roundToInt (v * 100.0f)) + "%"; });
+        auto unit = juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f);
+        auto g = std::make_unique<juce::AudioProcessorParameterGroup> ("fx", "Effects", "|");
+        g->addChild (std::make_unique<APB> (pid (chorus1), "Chorus I", false));
+        g->addChild (std::make_unique<APB> (pid (chorus2), "Chorus II", false));
+        g->addChild (std::make_unique<APB> (pid (delayOn), "Delay On", false));
+        g->addChild (std::make_unique<APB> (pid (delaySync), "Delay Sync", true));
+        g->addChild (std::make_unique<APC> (pid (delayDivision), "Delay Division", Effects::divisionNames(), 6));
+        g->addChild (std::make_unique<APF> (pid (delayTime), "Delay Time", skewed (1.0f, 2000.0f, 300.0f), 350.0f,
+                                            Attr().withStringFromValueFunction (msText)));
+        g->addChild (std::make_unique<APF> (pid (delayFeedback), "Delay Feedback", juce::NormalisableRange<float> (0.0f, 0.95f, 0.01f), 0.35f, pct));
+        g->addChild (std::make_unique<APF> (pid (delayMix), "Delay Mix", unit, 0.25f, pct));
+        g->addChild (std::make_unique<APB> (pid (reverbOn), "Reverb On", false));
+        g->addChild (std::make_unique<APF> (pid (reverbSize), "Reverb Size", unit, 0.5f, pct));
+        g->addChild (std::make_unique<APF> (pid (reverbDamping), "Reverb Damping", unit, 0.5f, pct));
+        g->addChild (std::make_unique<APF> (pid (reverbMix), "Reverb Mix", unit, 0.2f, pct));
         layout.add (std::move (g));
     }
 

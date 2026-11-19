@@ -6,15 +6,17 @@ A VST3 instrument built on a cycle-exact emulation of the MOS 6581 and 8580 SID 
 
 The plugin writes real SID registers ($D400 to $D418) at a 1 kHz control rate. Everything you hear (oscillators, combined waveforms, ring mod, hard sync, the ADSR envelopes including their quirks, and the 6581/8580 filters) comes from the emulated chip itself.
 
-## Download
+## Get the plugin
 
-Get the latest version from the **[Releases page](https://github.com/squibsy/deSIDuous/releases/latest)**. Each zip contains only the `deSIDuous.vst3` plugin; you don't need the source code to use it.
+deSIDuous is free software: this repository holds the complete source code, and you are welcome to build it yourself (see [Building](#building-windows)), change it and share it under the AGPLv3.
 
-| Platform | File | Copy `deSIDuous.vst3` to |
-|---|---|---|
-| Windows 10/11 (64-bit) | `deSIDuous-<version>-windows-x64-vst3.zip` | `C:\Program Files\Common Files\VST3` |
-| macOS 10.13+ (Apple Silicon and Intel) | `deSIDuous-<version>-macos-universal-vst3.zip` | `/Library/Audio/Plug-Ins/VST3` or `~/Library/Audio/Plug-Ins/VST3` |
-| Linux (64-bit) | `deSIDuous-<version>-linux-x64-vst3.zip` | `~/.vst3` |
+The ready-to-install Windows VST3, together with the deSIDuous sample pack made with it, is sold at **[bananalytics.gumroad.com/l/deSIDuous](https://bananalytics.gumroad.com/l/deSIDuous)**. Buying it supports development and includes updates and support.
+
+| Platform | Copy `deSIDuous.vst3` to |
+|---|---|
+| Windows 10/11 (64-bit) | `C:\Program Files\Common Files\VST3` |
+| macOS 10.13+ (Apple Silicon and Intel) | `/Library/Audio/Plug-Ins/VST3` or `~/Library/Audio/Plug-Ins/VST3` |
+| Linux (64-bit) | `~/.vst3` |
 
 Then rescan plugins in your DAW. deSIDuous appears as an instrument from "Bananalytics".
 
@@ -102,3 +104,9 @@ build/RenderTest_artefacts/Release/RenderTest.exe build/deSIDuous_artefacts/Rele
 ## Licence
 
 reSIDfp is GPL v2 or later, and JUCE 8 is used under its AGPLv3 open-source licence. This plugin is therefore distributed under the **AGPLv3**. Releasing it closed-source would need a commercial JUCE licence and a replacement for reSIDfp.
+
+See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for the credits.
+
+### Trademarks
+
+deSIDuous™ and its logo are trademarks of Ivan O'Donoghue. The AGPLv3 covers the source code, not the name or logo: if you distribute a modified version, please give it a different name. Commodore, Commodore 64 and MOS Technology are trademarks of their respective owners and are used here only to describe the SID chip; deSIDuous is not affiliated with them. VST is a trademark of Steinberg Media Technologies GmbH.

@@ -119,9 +119,9 @@ void SidLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& b, c
 
     g.setColour (on ? accent : C64::background);
     g.fillRect (r);
-    g.setColour (on ? accent.brighter (0.3f) : (over ? C64::text : C64::panelEdge));
+    g.setColour (! b.isEnabled() ? C64::panelEdge.withAlpha (0.5f) : on ? accent.brighter (0.3f) : (over ? C64::text : C64::panelEdge));
     g.drawRect (r, 1.0f);
-    if (down)
+    if (down && b.isEnabled())
     {
         g.setColour (juce::Colours::white.withAlpha (0.15f));
         g.fillRect (r);
@@ -131,7 +131,7 @@ void SidLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& b, c
 void SidLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& b, bool, bool)
 {
     g.setFont (getTextButtonFont (b, b.getHeight()));
-    g.setColour (b.getToggleState() ? C64::background : C64::text);
+    g.setColour (! b.isEnabled() ? C64::grey : b.getToggleState() ? C64::background : C64::text);   // greyed out when disabled
     g.drawFittedText (b.getButtonText(), b.getLocalBounds().reduced (2, 0), juce::Justification::centred, 1);
 }
 

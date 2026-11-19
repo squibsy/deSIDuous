@@ -356,9 +356,11 @@ const std::vector<Preset>& getFactoryPresets()
 
 void applyPreset (juce::AudioProcessorValueTreeState& state, const Preset& preset)
 {
+    // Effects are left as they are, so they stay on while you browse presets.
     for (auto* p : state.processor.getParameters())
         if (auto* rp = dynamic_cast<juce::RangedAudioParameter*> (p))
-            rp->setValueNotifyingHost (rp->getDefaultValue());
+            if (! rp->getParameterID().startsWith (Params::fxPrefix))
+                rp->setValueNotifyingHost (rp->getDefaultValue());
 
     for (auto& [id, value] : preset.values)
         if (auto* rp = state.getParameter (id))

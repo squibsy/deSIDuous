@@ -1,2 +1,24 @@
 build/
 renders/
+
+# Compiled plugins and sample-pack audio are sold, never published in this repository.
+*.vst3
+*.component
+*.dll
+*.exe
+*.msi
+*.dmg
+*.pkg
+*.so
+*.dylib
+*.zip
+*.7z
+*.rar
+*.wav
+*.flac
+*.aif
+*.aiff
+
+# Business files that stay on this machine or in a private repository (remove a line to track it)
+tools/pack/
+distribution/
