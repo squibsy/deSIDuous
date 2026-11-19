@@ -35,19 +35,9 @@ The SID's quirks come from the emulated chip itself: combined waveforms, ring mo
 
 Install the plugin from the download you received when you bought it ([bananalytics.gumroad.com/l/deSIDuous](https://bananalytics.gumroad.com/l/deSIDuous)), or build it yourself from the [source code](https://github.com/squibsy/deSIDuous), which is free software. Either way you end up with a single `deSIDuous.vst3` plugin.
 
-| System | Copy `deSIDuous.vst3` to |
-|---|---|
-| Windows 10/11 (64-bit) | `C:\Program Files\Common Files\VST3` |
-| macOS 10.13 or later (Apple Silicon and Intel) | `/Library/Audio/Plug-Ins/VST3` (all users) or `~/Library/Audio/Plug-Ins/VST3` (just you) |
-| Linux (64-bit) | `~/.vst3` |
+deSIDuous is a Windows 10/11 (64-bit) VST3 plugin. Copy `deSIDuous.vst3` to `C:\Program Files\Common Files\VST3`.
 
 Then open your DAW and rescan plugins. deSIDuous appears as an **instrument** from **Bananalytics**.
-
-**macOS:** the plugin is not notarised by Apple, so macOS may refuse to load it. After copying, open Terminal and run this once (change the path if you installed to `~/Library`):
-
-```bash
-xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/deSIDuous.vst3
-```
 
 ## 2. Quick start
 
@@ -430,8 +420,6 @@ deSIDuous emulates the SID cycle by cycle: about a million chip cycles per secon
 **Noise goes silent.** On a real SID, combining noise with another waveform can lock up the noise generator, and deSIDuous emulates this. Avoid combining **NOI** with other waveforms. To unlock it, switch the voice's **TEST** button on for about a second, then off again.
 
 **Notes stop when I change preset.** Changing the voice mode, polyphony or arpeggio mode (which many presets do) releases held notes. That's expected.
-
-**macOS won't load the plugin.** Run the `xattr` command in [Installation](#1-installation).
 
 **Clicks on the 6581 when playing with velocity.** Changing the 6581's volume register clicks on real hardware too. Set **VEL>VOL** to 0, or use the 8580.
 
